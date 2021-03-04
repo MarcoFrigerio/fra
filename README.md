@@ -1,3 +1,3 @@
 # fra
 
-julia set 
+julia set OPENCL
