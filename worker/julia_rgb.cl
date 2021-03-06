@@ -55,9 +55,9 @@ rgb julia_iterations(cfloat_t C,cfloat_t j ){
 	#pragma unroll
 	while (iterations < MAX_ITERATIONS){
 		//Z = cfloat_divide(cfloat_mul(Z,Z),cfloat_cos(Z));
-		Z=cfloat_powr(Z,4);
+		//Z=cfloat_powr(Z,3);
 		//Z=cfloat_tan(Z);
-		//Z = cfloat_mul(Z,Z);
+		Z = cfloat_mul(Z,Z);
 		Z = cfloat_add(Z,j);
 		//Z = cfloat_divide(Z,cfloat_tan(j));
 		if(cfloat_abs(Z) > MANDELBROT_THRESHOLD){break;}
@@ -66,7 +66,9 @@ rgb julia_iterations(cfloat_t C,cfloat_t j ){
 	float iterfloat=iterations;
 	float coeff=(iterfloat/MAX_ITERATIONS)*128;
 	float absz = cfloat_abs(Z);
-	if (coeff<128){rrgb.r=coeff*Z.x;rrgb.g=absz*Z.x;rrgb.b=(2-absz)*128;}
+	// if (coeff<128){rrgb.r=coeff*absz;rrgb.g=absz*100;rrgb.b=(2-absz)*128;}
+	// else{rrgb.r=absz*256;rrgb.g=absz*128;rrgb.b=255;}
+	if (coeff<128){rrgb.r=coeff*absz;rrgb.g=absz*Z.y;rrgb.b=(2-absz)*128;}
 	else{rrgb.r=Z.x;rrgb.g=absz*128;rrgb.b=Z.y;}
 	// rrgb.r=coeff;
 	// rrgb.g=absz*50;
