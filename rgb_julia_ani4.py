@@ -138,8 +138,10 @@ if __name__ == "__main__":
 
 	# plt.savefig("img/julia.jpg",format='jpg', bbox_inches='tight', pad_inches=0)
 	print("END LOOP...SAVING FILE....")
-
-	plt.rcParams['animation.ffmpeg_path'] = '/usr/bin/ffmpeg'
+	try:
+		plt.rcParams['animation.ffmpeg_path'] = '/usr/bin/ffmpeg'
+	except:
+		pass
 	plt.axis("off")	
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
 	# ani.to_html5_video(0)
