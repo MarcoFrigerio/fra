@@ -81,7 +81,7 @@ class opencl_py:
 		input_ib=np.int32(input_i)
 		input_thre=np.float32(thre)
 
-		result = np.empty(julia_shape, dtype=np.uint32)
+		result = np.empty(julia_shape, dtype=np.uint32)	
 		result_g = cl.Buffer(self.ctx, mf.WRITE_ONLY,result.nbytes)# size should be in byte
 		
 		start_event=cl.enqueue_marker(self.queue)
@@ -112,11 +112,8 @@ if __name__ == "__main__":
 
 
 	MIN=1
-	MAX=500
+	MAX=700
 	loops=MAX-MIN
-	STEPS=os.cpu_count()
-	counter=0
-
 	opencl_ctx = opencl_py(0,'julia')
 	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS":str(OUTPUT_SIZE_IN_PIXELS)})
 	
@@ -133,9 +130,6 @@ if __name__ == "__main__":
 		im.append(plt.imshow(result_matrix[i],animated=True,interpolation="bilinear"))
 		ims.append([im[i]])
 
-
-
-
 	# plt.savefig("img/julia.jpg",format='jpg', bbox_inches='tight', pad_inches=0)
 	print("END LOOP...SAVING FILE....")
 	try:
@@ -149,4 +143,4 @@ if __name__ == "__main__":
 	# writer = Writer(fps=15, metadata=dict(artist='Marco!'), bitrate=1800,extra_args=["-hwaccel", "cuda"])
 	# ani.save('julia.gif',writer='pillow',fps=15)
 	# ani.save('julia.mp4',fps=60,extra_args=["-hwaccel", "cuda"])
-	ani.save('julia.mp4',fps=60)
+	ani.save('julia.mp4',fps=15)
