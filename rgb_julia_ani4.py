@@ -72,8 +72,8 @@ class opencl_py:
 	def run_julia(self,input_i,thre,printspeed=False):
 		julia_shape=(OUTPUT_SIZE_IN_PIXELS,OUTPUT_SIZE_IN_PIXELS,3)
 		mf = cl.mem_flags# opencl memflag enum
-		#matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
-		matrix_generation_domain = np.linspace(-1.5, 1.5, num=OUTPUT_SIZE_IN_PIXELS)
+		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
+		matrix_generation_domain = np.linspace(-1.7, 1.7, num=OUTPUT_SIZE_IN_PIXELS)
 
 		gD_np = np.array(matrix_generation_domain,dtype=np.float32)
 		gD_g = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=gD_np)
@@ -100,6 +100,16 @@ class opencl_py:
 		result_g.release()
 		return result
 
+def rescale_linear(array):
+	"""Rescale an arrary linearly."""
+	# result_matrix=np.asarray(array)
+	new_min=0
+	new_max=255
+	minimum, maximum = np.amin(array), np.amax(array)
+	m = (new_max - new_min) / (maximum - minimum)
+	b = new_min - m * minimum
+	result_matrix = m * np.asarray(array) + b
+	return result_matrix.astype(int) 
 
 if __name__ == "__main__":
 	set_start_method("spawn")
@@ -112,23 +122,31 @@ if __name__ == "__main__":
 
 
 	MIN=1
-	MAX=700
+	MAX=200
+	POWR=12	
 	loops=MAX-MIN
 	opencl_ctx = opencl_py(0,'julia')
-	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS":str(OUTPUT_SIZE_IN_PIXELS)})
+	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS":str(OUTPUT_SIZE_IN_PIXELS),
+						"POWR":str(POWR)})
 	
 	
 	result_matrix=[]
 	for i in range (MIN,MAX):
 		result_matrix.append(opencl_ctx.run_julia(i,i/50))
 		#f_matrix_gen((opencl_ctx,i,i/40)))
-
+	
+	# print("RESCALING RGB VALUES..")
+	# with Pool() as p:
+	# 	result_matrix=p.map(rescale_linear,result_matrix)
+	# print("BEGIN PLOTTING IMAGING..")
 	nr_im=len(result_matrix)
 	im = []
 	for i in range(nr_im):
 		# im[i].write_png("img/test"+str(i)+".png")
-		im.append(plt.imshow(result_matrix[i],animated=True,interpolation="bilinear"))
-		ims.append([im[i]])
+		# result_matrix=rescale_linear(result_matrix)
+		# print(f"processing matrix {i}")
+		im=plt.imshow(result_matrix[i],animated=True,interpolation="bilinear")
+		ims.append([im])
 
 	# plt.savefig("img/julia.jpg",format='jpg', bbox_inches='tight', pad_inches=0)
 	print("END LOOP...SAVING FILE....")
@@ -136,11 +154,11 @@ if __name__ == "__main__":
 		plt.rcParams['animation.ffmpeg_path'] = '/usr/bin/ffmpeg'
 	except:
 		pass
-	plt.axis("off")	
+	plt.axis("off")
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
 	# ani.to_html5_video(0)
 	# Writer = animation.writers['ffmpeg']
 	# writer = Writer(fps=15, metadata=dict(artist='Marco!'), bitrate=1800,extra_args=["-hwaccel", "cuda"])
 	# ani.save('julia.gif',writer='pillow',fps=15)
-	# ani.save('julia.mp4',fps=60,extra_args=["-hwaccel", "cuda"])
-	ani.save('julia.mp4',fps=15)
+	ani.save('julia.mp4',fps=15,extra_args=["-threads", "4"])
+	#ani.save('julia.mp4',fps=60)

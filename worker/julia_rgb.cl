@@ -3,6 +3,8 @@
 #define MAX_ITERATIONS 30
 #define MANDELBROT_THRESHOLD 2
 #define OUTPUT_SIZE_IN_PIXELS 2000
+#define POWR 2
+
 #define RGB 3
 
 typedef struct {
@@ -25,6 +27,8 @@ rgb julia_iterations(
 		float iterfloat=iterations;
 		float speed0=0;
 		float speed;
+		float speediter1;
+		const float maxrgb = 255.0;
 		// cfloat_t one;
 		// one.x=20/iterations;
 		// one.y=0;
@@ -34,16 +38,17 @@ rgb julia_iterations(
 		//while (iterations < MAX_ITERATIONS){
 		while (iterations < input_i){
 			//Z = cfloat_divide(cfloat_mul(Z,Z),cfloat_cos(Z));
-			Z=cfloat_powr(Z,2);
+			Z=cfloat_powr(Z,POWR);
+			//Z= cfloat_mul(j ,cfloat_exp(Z));
 			//Z=cfloat_tan(Z);
 			//Z = cfloat_mul(Z,Z);
 			//Z = cfloat_mul(Z,Z);
-			//j=cfloat_powr(j,rot);
-			//j = cfloat_mul(j,cfloat_powr(j,rot));
 			//Z = cfloat_cos(Z,cfloat_e(j));
 			Z = cfloat_add(Z,j);
-			speed+=cfloat_abs(Z)-speed0;
+			if (iterations==1){speediter1=cfloat_abs(Z);}
+			speed+=cfloat_abs(Z)+speed0;
 			speed0=cfloat_abs(Z);
+			//if(iterations==1){speed=cfloat_abs(Z);}
 			//Z = cfloat_divide(Z,cfloat_tan(j));
 			if(cfloat_abs(Z) > input_thre){break;}
 			iterations++;
@@ -57,23 +62,23 @@ rgb julia_iterations(
 			// r=fmax(coeff*absz,255);
 			// g=fmax(coeff*2,255);
 			// b=fmax((2-absz*coeff/2),255);
-			r=coeff*absz;
-			g=Z.y*Z.y;
-			b=255-(absz)*48;
+			r=coeff*fmin(input_thre, absz*2);
+			g=fmin(maxrgb,5*Z.y*Z.y);
+			b=255-fmin(absz*48,maxrgb);
 			}
 		else{
 			// r=fmax(absz*32,255);
 			// g=fmax(255-128*absz,255);
 			// b=fmax(absz*48,255);
-			r=100-(speed*100);//native_cos(absz)*255;
-			g=speed;
-			b=speed*50;
+			r=255-(speed);//native_cos(absz)*255;
+			g=128*speediter1;
+			b=speed;
 			}
 		rrgb.r=r;
 		rrgb.g=g;
 		rrgb.b=b;
 		rrgb.iters=iterations;
-		rrgb.coeff=coeff;
+		rrgb.coeff=speediter1;
 		// if (coeff<128){rrgb.r=coeff*absz;rrgb.g=absz*50;rrgb.b=(2-absz)*128;}
 		// else{rrgb.r=absz*256;rrgb.g=absz*128;rrgb.b=(2-absz)*128;}
 		// // // rrgb.r=coeff;
@@ -120,7 +125,8 @@ __kernel void julia(
 	// 	{printf("input_i %d finput_i  %4.4f l_input_i %d  \n",input_i,finput_i,l_input_i);}
 
 	float l_input_thre=2;
-	float rot = l_input_i*l_input_thre/OUTPUT_SIZE_IN_PIXELS*0.08;
+	float rot = l_input_i*l_input_thre/OUTPUT_SIZE_IN_PIXELS*0.1;
+	//float rot = l_input_thre/OUTPUT_SIZE_IN_PIXELS;
 	;//input_thre;
 	//if (gid_x==1000 && gid_y==1000){printf("gid_x %d - gid_y %d - gDx %4.4f - gDy %4.4f - rot %4.4f \n",gid_x,gid_y,x,y,rot);}
 	cfloat_t C;
@@ -129,13 +135,16 @@ __kernel void julia(
 	rgb m;
 	cfloat_t j;
 	j.x=-0.8+rot;
-	j.y=-0.156-rot;
-	//j.y=-0.8-rot*3;
+	j.y=-0.156-rot;	
+	j.x=-0.6+rot;
+	 j.y=-0.262-rot;	
+	// j.x=-0.2+rot;
+	// j.y=-0.34-rot*3;
 	//j=cfloat_mul(j,cfloat_powr(j,rot));
 	//m=julia_iterations(C,j,rot,input_i,input_thre);
 	m=julia_iterations(C,j,rot,100,l_input_thre);
 	if (gid_x==750 && gid_y==750 && gid_z==1 )
-		{printf("iterations %d coeff %4.1f red %d green %d blue %d  \n",m.iters,m.coeff,m.r,m.g,m.b);}
+		{printf("iterations %d rot %4.4f red %d green %d blue %d coeff %4.4f \n",m.iters,rot,m.r,m.g,m.b,m.coeff);}
 
 	uint pos0 = gid_x+gid_y*OUTPUT_SIZE_IN_PIXELS;
 	//uint pos = pos0 + OUTPUT_SIZE_IN_PIXELS*OUTPUT_SIZE_IN_PIXELS*gid_z;
