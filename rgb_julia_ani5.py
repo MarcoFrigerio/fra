@@ -67,7 +67,7 @@ class opencl_py:
 		print("KERNEL COMPILED")
 
 
-	def run_julia(self,input_i,thre,printspeed=False):
+	def run_julia(self,input_i,thre):
 		julia_shape=(OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,4)
 		mf = cl.mem_flags# opencl memflag enum
 		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
@@ -119,23 +119,26 @@ def rescale_linear(array):
 	return result_matrix.astype(int) 
 
 if __name__ == "__main__":
+	OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
+	OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
+	X_RANGE=0.7                      # range of y values 
+	MAX_ITERATIONS = 90            # max number of iterations in single pixel calculation
+	MANDELBROT_THRESHOLD = 2       # absolute value
+	MIN=100                        # start point of C values 
+	MAX=400                       # end point of C values
+	SPEEDF = 0.08                  # speed of change of C value
+	POWR=2                         # powr of Z in iteration function
+
 	set_start_method("spawn")
-	OUTPUT_SIZE_IN_PIXELS_X = 1080
-	OUTPUT_SIZE_IN_PIXELS_Y = 1920
-	X_RANGE=1.3
-	MAX_ITERATIONS = 80
-	MANDELBROT_THRESHOLD = 2
-
-	MIN=1
-	MAX=800
-	POWR=3
-
 	ims = []
 
 	loops=MAX-MIN
 	opencl_ctx = opencl_py(0,'julia')
 	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS_X":str(OUTPUT_SIZE_IN_PIXELS_X),
 						"OUTPUT_SIZE_IN_PIXELS_Y":str(OUTPUT_SIZE_IN_PIXELS_Y),
+						"MAX_ITERATIONS":str(MAX_ITERATIONS),
+						"MANDELBROT_THRESHOLD":str(MANDELBROT_THRESHOLD),
+						"SPEEDF":str(SPEEDF),
 						"POWR":str(POWR)})
 
 	figuresize_y=OUTPUT_SIZE_IN_PIXELS_X/100
@@ -179,10 +182,10 @@ if __name__ == "__main__":
 	except:
 		pass
 	plt.axis("off")
-	
 
 	fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
 
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
-	ani.save('julia.mp4',fps=60,extra_args=["-threads", "4"])
+	# ani.save('julia.mp4',fps=60,extra_args=["-threads", "4"])
+	ani.save('julia.mp4',fps=60,extra_args=["-threads", "4","-codec","hevc"])
 	
