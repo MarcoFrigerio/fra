@@ -67,16 +67,22 @@ class opencl_py:
 		print("KERNEL COMPILED")
 
 
-	def run_julia(self,input_i,thre):
+	def run_julia(self,input_i,thre,c):
 		julia_shape=(OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,4)
 		mf = cl.mem_flags# opencl memflag enum
 		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
 		screen_format=OUTPUT_SIZE_IN_PIXELS_Y/OUTPUT_SIZE_IN_PIXELS_X
-		x_range=X_RANGE
+		# zoom=1-(c-1)/c
+		zoom=(1-c)/c
+		# zoom=1/(c/50)
+		# print(f"i {zoom}")
+		x_range=X_RANGE*(zoom)
 		y_range=x_range*screen_format
 		matrix_generation_domain_x = np.linspace(-x_range, x_range, num=OUTPUT_SIZE_IN_PIXELS_X)
 		matrix_generation_domain_y = np.linspace(-y_range, y_range, num=OUTPUT_SIZE_IN_PIXELS_Y)
 
+		matrix_generation_domain_x=matrix_generation_domain_x
+		matrix_generation_domain_x=matrix_generation_domain_y
 		gD_npx = np.array(matrix_generation_domain_x,dtype=np.float32)
 		gD_gx = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=gD_npx)
 
@@ -93,7 +99,7 @@ class opencl_py:
 
 		finish_event=self.prg.julia(self.queue,
 			julia_shape,
-			None ,
+			(1,1,4),#None ,
 			gD_gx,
 			gD_gy,
 			input_ib,
@@ -121,19 +127,20 @@ def rescale_linear(array):
 if __name__ == "__main__":
 	OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
 	OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
-	X_RANGE=0.7                      # range of y values 
+	X_RANGE=1                      # range of y values 
 	MAX_ITERATIONS = 90            # max number of iterations in single pixel calculation
 	MANDELBROT_THRESHOLD = 2       # absolute value
-	MIN=100                        # start point of C values 
-	MAX=400                       # end point of C values
-	SPEEDF = 0.08                  # speed of change of C value
+	MIN=1000                       # start point of C values 
+	MAX=1200                       # end point of C values
+	SPEEDF = 0.1                   # speed of change of C value
 	POWR=2                         # powr of Z in iteration function
 
 	set_start_method("spawn")
 	ims = []
 
 	loops=MAX-MIN
-	opencl_ctx = opencl_py(0,'julia')
+	zoomnp=np.linspace(0,1, num=MAX-MIN)
+	opencl_ctx=opencl_py(0,'julia')
 	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS_X":str(OUTPUT_SIZE_IN_PIXELS_X),
 						"OUTPUT_SIZE_IN_PIXELS_Y":str(OUTPUT_SIZE_IN_PIXELS_Y),
 						"MAX_ITERATIONS":str(MAX_ITERATIONS),
@@ -145,9 +152,12 @@ if __name__ == "__main__":
 	figuresize_x=OUTPUT_SIZE_IN_PIXELS_Y/100
 	fig=plt.figure(figsize=(figuresize_x, figuresize_y))
 
+	counter=0
 	result_matrix=[]
 	for i in range (MIN,MAX):
-		result_matrix.append(opencl_ctx.run_julia(i,i/50))
+		z=zoomnp[counter]
+		result_matrix.append(opencl_ctx.run_julia(i,i/50,z))
+		counter+=1
 		#f_matrix_gen((opencl_ctx,i,i/40)))
 
 	# print("RESCALING RGB VALUES..")
@@ -187,5 +197,5 @@ if __name__ == "__main__":
 
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
 	# ani.save('julia.mp4',fps=60,extra_args=["-threads", "4"])
-	ani.save('julia.mp4',fps=60,extra_args=["-threads", "4","-codec","hevc"])
+	ani.save('julia.mp4',fps=15,extra_args=["-threads", "4","-codec","hevc"])
 	

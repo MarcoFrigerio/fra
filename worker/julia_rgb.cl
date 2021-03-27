@@ -5,7 +5,7 @@
 #define OUTPUT_SIZE_IN_PIXELS_X 2000
 #define OUTPUT_SIZE_IN_PIXELS_Y 2000
 #define POWR 2
-
+#define SPEEDF 0.3
 #define RGB 4
 
 typedef struct {
@@ -65,9 +65,10 @@ rgb julia_iterations(
 			// r=fmax(coeff*absz,255);
 			// g=fmax(coeff*2,255);
 			// b=fmax((2-absz*coeff/2),255);
-			r=coeff*fmin(input_thre, absz*2);
-			g=fmin(maxrgb,5*Z.y*Z.y);
-			b=255-fmin(absz*48,maxrgb);
+			r=fmin(maxrgb,coeff*absz*2);
+			g=fmin(maxrgb,25*Z.y*Z.y);
+			b=255-fmin(absz*52,maxrgb);
+			// rrgb.alpha=fmax(fmax(r,g),b);
 			}
 		else{
 			// r=fmax(absz*32,255);
@@ -75,14 +76,15 @@ rgb julia_iterations(
 			// b=fmax(absz*48,255);
 			r=255-fmin(maxrgb,255*speediter1);//native_cos(absz)*255;
 			g=fmin(maxrgb,255*speediter1);
-			b=speed;
+			b=fmin(maxrgb,speed);
+			// rrgb.alpha=fmax(fmax(r,g),b);
 			}
 		rrgb.r=r;
 		rrgb.g=g;
 		rrgb.b=b;
-		rrgb.alpha=fmax(fmax(r,g),b);
+		rrgb.alpha=255;
 		rrgb.iters=iterations;
-		rrgb.coeff=speediter1;
+		rrgb.coeff=rrgb.alpha;
 		// if (coeff<128){rrgb.r=coeff*absz;rrgb.g=absz*50;rrgb.b=(2-absz)*128;}
 		// else{rrgb.r=absz*256;rrgb.g=absz*128;rrgb.b=(2-absz)*128;}
 		// // // rrgb.r=coeff;
@@ -103,27 +105,27 @@ __kernel void julia(
 	uint gid_x = get_global_id(0);
 	uint gid_y = get_global_id(1);
 	uint gid_z = get_global_id(2);
+	uint lid_z = get_local_id(2);	
 	
 	// if (gid_x==750 && gid_y==750 && gid_z==1 )
 	// 	{printf("Start process %d %d",gid_x,gid_y);}
 
-	// if (gid_x==1 && gid_y==1 && gid_z==1 && input_i==1)
-	// {
-	// 	uint wkdim=get_work_dim ();
-	// 	size_t ls0=get_global_size(0);
-	// 	size_t ls1=get_global_size(1);
-	// 	size_t ls2=get_global_size(2);
+	if (gid_x==1 && gid_y==1 && gid_z==1 && input_i==1)
+	{
+		uint wkdim=get_work_dim ();
+		size_t ls0=get_local_id(0);
+		size_t ls1=get_local_id(1);
+		size_t ls2=get_local_id(2);
 
-	// 	printf("wkdim %d \n",wkdim);
-	// 	printf("par 0 %d \n",ls0);
-	// 	printf("par 1 %d \n",ls1);
-	// 	printf("par 2 %d \n",ls2);
-	// }
+		printf("wkdim %d \n",wkdim);
+		printf("par 0 %d \n",ls0);
+		printf("par 1 %d \n",ls1);
+		printf("par 2 %d \n",ls2);
+	}
 
 
 	float x = gDx[gid_x];
 	float y = gDy[gid_y];
-	
 	float finput_i = input_i;
 	finput_i=cos(finput_i) ;
 	uint l_input_i=input_i;
@@ -132,35 +134,36 @@ __kernel void julia(
 	// 	{printf("input_i %d finput_i  %4.4f l_input_i %d  \n",input_i,finput_i,l_input_i);}
 
 
-	float l_input_thre=2;
-	float rot = l_input_i*l_input_thre/OUTPUT_SIZE_IN_PIXELS_Y*0.2;
+	float l_input_thre=MANDELBROT_THRESHOLD;
+	float rot = l_input_i*l_input_thre/OUTPUT_SIZE_IN_PIXELS_Y*SPEEDF;
 	//float rot = l_input_thre/OUTPUT_SIZE_IN_PIXELS;
 	;//input_thre;
 	//if (gid_x==1000 && gid_y==1000){printf("gid_x %d - gid_y %d - gDx %4.4f - gDy %4.4f - rot %4.4f \n",gid_x,gid_y,x,y,rot);}
 	cfloat_t C;
 	C.x=y;
 	C.y=x;
-	rgb m;
+	__local rgb m;
 	cfloat_t j;
-	j.x=-0.8+rot;
-	j.y=-0.156-rot;	
-	// j.x=0-rot;
-	// j.y=0+rot;	
+	// j.x=-0.8+rot;
+	// j.y=-0.156-rot;	
+	j.x=-0.835+rot;
+	j.y=-0.232-rot;	
 	//j=cfloat_mul(j,cfloat_powr(j,rot));
 	//m=julia_iterations(C,j,rot,input_i,input_thre);
-	m=julia_iterations(C,j,rot,100,l_input_thre);
-	if (gid_x==0 && gid_y==0 && gid_z==0 )
-		{printf("x %4.4f y %4.4f iterations %d rot %4.4f red %d green %d blue %d coeff %4.4f \n",x,y,m.iters,rot,m.r,m.g,m.b,m.coeff);}
+	if (lid_z==0) {m=julia_iterations(C,j,rot,MAX_ITERATIONS,l_input_thre);}
+	if (gid_x==OUTPUT_SIZE_IN_PIXELS_X/2 && gid_y==OUTPUT_SIZE_IN_PIXELS_Y/2 && gid_z==1 )
+		{printf("x %4.4f y %4.4f iterations %d input_i %4.4f red %d green %d blue %d coeff %4.4f j.x %1.4f j.y %1.4f \n",
+		x,y,m.iters,input_i,m.r,m.g,m.b,m.coeff,j.x,j.y);}
 
 	uint pos0 = gid_y+gid_x*OUTPUT_SIZE_IN_PIXELS_Y;
 	//uint pos = pos0 + OUTPUT_SIZE_IN_PIXELS*OUTPUT_SIZE_IN_PIXELS*gid_z;
 	uint pos=pos0*RGB+gid_z;
 	// uint pos0 = gid_x*RGB*gid_z;
 	// uint pos = pos0 + OUTPUT_SIZE_IN_PIXELS*gid_y;
-	if (gid_z==0){result[pos]=m.r;}
-	if (gid_z==1){result[pos]=m.g;}
-	if (gid_z==2){result[pos]=m.b;}
-	if (gid_z==3){result[pos]=m.alpha;}
+	if (lid_z==0){result[pos]=m.r;}
+	if (lid_z==1){result[pos]=m.g;}
+	if (lid_z==2){result[pos]=m.b;}
+	if (lid_z==3){result[pos]=m.alpha;}
 
 	//printf("gid_x |%d| - gid_y |%d| - gid_z |%d| - pos |%d| - pos0 |%d| m |%d| \n",gid_x,gid_y,gid_z,pos,pos0, m);
 }
