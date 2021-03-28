@@ -74,7 +74,7 @@ class opencl_py:
 		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
 		screen_format=OUTPUT_SIZE_IN_PIXELS_Y/OUTPUT_SIZE_IN_PIXELS_X
 		# zoom=1-(c-1)/c
-		zoom=(1-c)/(c+1)
+		zoom=(1-c)/c
 		# print(f"i {zoom}")
 		x_range=X_RANGE*(zoom)
 		y_range=x_range*screen_format
@@ -157,7 +157,7 @@ def concatenate(video_list):
 	elenco_file_temp = []
 	for f in video_list:
 		file = "img/temp" + str(video_list.index(f) ) + ".ts"
-		os.system("ffmpeg -i " + f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
+		os.system("ffmpeg -y -i " + f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
 		elenco_file_temp.append(file)
 	# print(elenco_file_temp)
 	for f in elenco_file_temp:
@@ -179,8 +179,8 @@ if __name__ == "__main__":
 	MAX_ITERATIONS = 90            # max number of iterations in single pixel calculation
 	MANDELBROT_THRESHOLD = 2       # thresold of the absolute value of reiterated Z
 	MIN=1000                       # start point of C values 
-	MAX=1200                       # end point of C values
-	SPEEDF = 0.1                   # speed of change of C value
+	MAX=20000                       # end point of C values
+	SPEEDF = 0.1                   # speed of change of C value in julia set
 	POWR=2                         # powr of Z in iteration function
 	CX=0.1                         # position of x center
 	CY=-0.55                       # position of y center
