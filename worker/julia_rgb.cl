@@ -7,6 +7,7 @@
 #define POWR 2
 #define SPEEDF 0.3
 #define RGB 4
+#define MANDELBROT 0
 
 typedef struct {
 	uint r;
@@ -47,7 +48,8 @@ rgb julia_iterations(
 			//Z = cfloat_mul(Z,Z);
 			//Z = cfloat_mul(Z,Z);
 			//Z = cfloat_cos(Z,cfloat_e(j));
-			Z = cfloat_add(Z,j);
+			if (MANDELBROT==0){Z = cfloat_add(Z,j);}
+			else if (MANDELBROT==1) {Z = cfloat_add(Z,C);}
 			if (iterations==input_i-1){speediter1=cfloat_abs(Z);}
 			speed+=cfloat_abs(Z)+speed0;
 			speed0=cfloat_abs(Z);
@@ -94,8 +96,8 @@ rgb julia_iterations(
 	}
 
 __kernel void julia(
-	__global float * gDx,
-	__global float * gDy,
+	__global double * gDx,
+	__global double * gDy,
 	const unsigned int input_i,
 	const float input_thre,
 	__global uint * result
@@ -124,8 +126,8 @@ __kernel void julia(
 	}
 
 
-	float x = gDx[gid_x];
-	float y = gDy[gid_y];
+	double x = gDx[gid_x];
+	double y = gDy[gid_y];
 	float finput_i = input_i;
 	finput_i=cos(finput_i) ;
 	uint l_input_i=input_i;
@@ -134,8 +136,8 @@ __kernel void julia(
 	// 	{printf("input_i %d finput_i  %4.4f l_input_i %d  \n",input_i,finput_i,l_input_i);}
 
 
-	float l_input_thre=MANDELBROT_THRESHOLD;
-	float rot = l_input_i*l_input_thre/OUTPUT_SIZE_IN_PIXELS_Y*SPEEDF;
+	double l_input_thre=MANDELBROT_THRESHOLD;
+	double rot = l_input_i*l_input_thre/OUTPUT_SIZE_IN_PIXELS_Y*SPEEDF;
 	//float rot = l_input_thre/OUTPUT_SIZE_IN_PIXELS;
 	;//input_thre;
 	//if (gid_x==1000 && gid_y==1000){printf("gid_x %d - gid_y %d - gDx %4.4f - gDy %4.4f - rot %4.4f \n",gid_x,gid_y,x,y,rot);}
@@ -152,7 +154,7 @@ __kernel void julia(
 	//m=julia_iterations(C,j,rot,input_i,input_thre);
 	if (lid_z==0) {m=julia_iterations(C,j,rot,MAX_ITERATIONS,l_input_thre);}
 	if (gid_x==OUTPUT_SIZE_IN_PIXELS_X/2 && gid_y==OUTPUT_SIZE_IN_PIXELS_Y/2 && gid_z==1 )
-		{printf("x %4.4f y %4.4f iterations %d input_i %4.4f red %d green %d blue %d coeff %4.4f j.x %1.4f j.y %1.4f \n",
+		{printf("x %4.4f y %4.4f iterations %d input_i %d red %d green %d blue %d coeff %4.4f j.x %1.4f j.y %1.4f \n",
 		x,y,m.iters,input_i,m.r,m.g,m.b,m.coeff,j.x,j.y);}
 
 	uint pos0 = gid_y+gid_x*OUTPUT_SIZE_IN_PIXELS_Y;

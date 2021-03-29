@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 
+import multiprocessing
 import PIL
 # from numpy.core.fromnumeric import repeat
 import pyopencl as cl
@@ -15,6 +16,7 @@ from multiprocessing import Process
 from multiprocessing import set_start_method
 # from multiprocessing import get_context
 from PIL import Image
+import time
 
 
 class opencl_py:
@@ -74,19 +76,19 @@ class opencl_py:
 		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
 		screen_format=OUTPUT_SIZE_IN_PIXELS_Y/OUTPUT_SIZE_IN_PIXELS_X
 		# zoom=1-(c-1)/c
-		zoom=(1-c)/c
+		zoom=(1-c)/(40*c+1)
 		# print(f"i {zoom}")
 		x_range=X_RANGE*(zoom)
 		y_range=x_range*screen_format
-		matrix_generation_domain_x = np.linspace(-x_range+CX, x_range+CX, num=OUTPUT_SIZE_IN_PIXELS_X)
-		matrix_generation_domain_y = np.linspace(-y_range+CY, y_range+CY, num=OUTPUT_SIZE_IN_PIXELS_Y)
+		matrix_generation_domain_x = np.linspace(-x_range+CX, x_range+CX, num=OUTPUT_SIZE_IN_PIXELS_X,dtype=np.float64)
+		matrix_generation_domain_y = np.linspace(-y_range+CY, y_range+CY, num=OUTPUT_SIZE_IN_PIXELS_Y,dtype=np.float64)
 
 		# matrix_generation_domain_x=matrix_generation_domain_x
 		# matrix_generation_domain_x=matrix_generation_domain_y
-		gD_npx = np.array(matrix_generation_domain_x,dtype=np.float32)
+		gD_npx = np.array(matrix_generation_domain_x,dtype=np.float64)
 		gD_gx = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=gD_npx)
 
-		gD_npy = np.array(matrix_generation_domain_y,dtype=np.float32)
+		gD_npy = np.array(matrix_generation_domain_y,dtype=np.float64)
 		gD_gy = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=gD_npy)
 
 		input_ib=np.int32(input_i)
@@ -168,7 +170,6 @@ def concatenate(video_list):
 			stringa += "\" -c copy  -bsf:a aac_adtstoasc output.mp4"
 	# print(stringa)
 	os.system(stringa)
- 
 
 if __name__ == "__main__":
 	# OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
@@ -178,8 +179,8 @@ if __name__ == "__main__":
 	X_RANGE=1                    # range of y values 
 	MAX_ITERATIONS = 90            # max number of iterations in single pixel calculation
 	MANDELBROT_THRESHOLD = 2       # thresold of the absolute value of reiterated Z
-	MIN=1000                       # start point of C values 
-	MAX=20000                       # end point of C values
+	MIN=1_000                       # start point of C values 
+	MAX=120_000                       # end point of C values
 	SPEEDF = 0.1                   # speed of change of C value in julia set
 	POWR=2                         # powr of Z in iteration function
 	CX=0.1                         # position of x center
@@ -187,7 +188,9 @@ if __name__ == "__main__":
 	CX=0.413238151606368892027     # position of y center
 	CY=-1.24254013716898265806     # position of y center	
 	MANDELBROT=1                   # 1 = mandelbrot set , 0 = julia set
-	CYCLEFRAME=100	
+	FRAMEEVERY=10
+	CYCLEFRAME=60*FRAMEEVERY	
+	
 	set_start_method("spawn")
 
 	loops=MAX-MIN
@@ -206,15 +209,16 @@ if __name__ == "__main__":
 	if loops>CYCLEFRAME:
 		nrloops=loops//CYCLEFRAME		
 
-	zoomnp=np.linspace(0,1, num=loops)
+	zoomnp=np.linspace(0,1, num=loops//FRAMEEVERY)
 	counter=0
 	ccycle=0
 	video_list=[]
+	jobs=[]
 	for xcycle in range(nrloops):
 		min=MIN+ccycle*CYCLEFRAME
 		max=min+CYCLEFRAME
 		result_matrix=[]
-		for i in range (min,max):
+		for i in range (min,max,FRAMEEVERY):
 			z=zoomnp[counter]
 			result_matrix.append(opencl_ctx.run_julia(i,i/50,z))
 			counter+=1
@@ -232,14 +236,21 @@ if __name__ == "__main__":
 		fig=plt.figure(figsize=(figuresize_x, figuresize_y))
 		fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
 		filename='img/julia'+str(ccycle)+'.mp4'
-		p = Process(target=save_file,args=(filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
-		p.start()
-		p.join()
 		video_list.append(filename)
-		del p
-		del result_matrix
+		
+		while True:
+			pcs = len(multiprocessing.active_children())
+			if pcs<4:
+				p = Process(target=save_file,args=(filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
+				jobs.append(p)
+				p.start()
+				break
+			time.sleep(1)
+		# p.join()
+		# del result_matrix
 		# ani.save('img/julia'+str(ccycle)+'.mp4',fps=60,extra_args=["-threads", "4"])
 		# ani.save('julia'+str(ccycle)+'.mp4',fps=15,extra_args=["-threads", "4","-codec","hevc"])
 		ccycle+=1
-
+	for job in jobs:
+		job.join()
 	concatenate(video_list)	
