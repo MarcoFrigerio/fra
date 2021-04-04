@@ -1,6 +1,6 @@
 # fractals
 
-julia set OPENCL calulation 
+<b>julia set OPENCL calculation</b> 
 you can set all this parameters
 
 	OUTPUT_SIZE_IN_PIXELS_X = 1440  # number of columns
