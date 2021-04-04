@@ -40,6 +40,7 @@ class opencl_py:
 		# Create queue for each kernel execution, here we only use 1 device
 		self.queue = cl.CommandQueue(self.ctx,devices[0],cl.command_queue_properties.PROFILING_ENABLE)
 		if func=="julia":filen="julia_rgb.cl"
+		if func=="julia_c":filen="julia_rgb_complex.cl"
 
 		self.OPENCL_CODE_PATH=os.path.join("worker",filen)
 
@@ -76,10 +77,11 @@ class opencl_py:
 		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
 		screen_format=OUTPUT_SIZE_IN_PIXELS_Y/OUTPUT_SIZE_IN_PIXELS_X
 		# zoom=1-(c-1)/c
-		zoom=(1-c)/(40*c+1)
+		zoom=(1-c)/(100*c+1)
 		# print(f"i {zoom}")
-		x_range=X_RANGE*(zoom)
-		y_range=x_range*screen_format
+		x_range=np.float64(X_RANGE*(zoom))
+		y_range=np.float64(x_range*screen_format)
+		print(f"descaling zoom : {zoom} - new xrange {x_range}")
 		matrix_generation_domain_x = np.linspace(-x_range+CX, x_range+CX, num=OUTPUT_SIZE_IN_PIXELS_X,dtype=np.float64)
 		matrix_generation_domain_y = np.linspace(-y_range+CY, y_range+CY, num=OUTPUT_SIZE_IN_PIXELS_Y,dtype=np.float64)
 
@@ -155,46 +157,63 @@ def save_file( filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 	ani.save(filename,fps=60,extra_args=["-threads", "4"])
 
 def concatenate(video_list):
-	stringa = "ffmpeg -y -i \"concat:"
 	elenco_file_temp = []
 	for f in video_list:
 		file = "img/temp" + str(video_list.index(f) ) + ".ts"
 		os.system("ffmpeg -y -i " + f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
 		elenco_file_temp.append(file)
 	# print(elenco_file_temp)
-	for f in elenco_file_temp:
-		stringa += f
-		if elenco_file_temp.index(f) != len(elenco_file_temp)-1:
-			stringa += "|"
-		else:
-			stringa += "\" -c copy  -bsf:a aac_adtstoasc output.mp4"
+	stringa = "ffmpeg -y -i \"concat:"
+	# for f in elenco_file_temp:
+	# 	stringa += f
+	# 	# if elenco_file_temp.index(f) != len(elenco_file_temp)-1:
+		# 	stringa += "|"
+		# else:
+		# 	stringa += "\" -c copy  -bsf:a aac_adtstoasc output.mp4"
+		# for f in elenco_file_temp:
+	input_file_list="img/input_file_list"
+	with open(input_file_list,"w") as f:
+		for fts in elenco_file_temp:
+			f.write("file '"+fts.lstrip("img/")+"'\n")
+		
+	stringa = "ffmpeg -y -f concat -safe 0 -i "+input_file_list+" -c copy output.mp4"
+
 	# print(stringa)
 	os.system(stringa)
 
 if __name__ == "__main__":
 	# OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
 	# OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
-	OUTPUT_SIZE_IN_PIXELS_X = 1440 # number of columns
-	OUTPUT_SIZE_IN_PIXELS_Y = 2560 # number of rows
-	X_RANGE=1                    # range of y values 
-	MAX_ITERATIONS = 90            # max number of iterations in single pixel calculation
-	MANDELBROT_THRESHOLD = 2       # thresold of the absolute value of reiterated Z
-	MIN=1_000                       # start point of C values 
-	MAX=120_000                       # end point of C values
-	SPEEDF = 0.1                   # speed of change of C value in julia set
-	POWR=2                         # powr of Z in iteration function
-	CX=0.1                         # position of x center
-	CY=-0.55                       # position of y center
-	CX=0.413238151606368892027     # position of y center
-	CY=-1.24254013716898265806     # position of y center	
-	MANDELBROT=1                   # 1 = mandelbrot set , 0 = julia set
-	FRAMEEVERY=10
-	CYCLEFRAME=60*FRAMEEVERY	
-	
+	OUTPUT_SIZE_IN_PIXELS_X = 1440  # number of columns
+	OUTPUT_SIZE_IN_PIXELS_Y = 2560  # number of rows
+	X_RANGE=0.0005                    # range of y values 
+	MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
+	MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z
+	MIN=1                       # start point of C values 
+	MAX=500_000                        # end point of C values
+	SPEEDF = 0.1                    # speed of change of C value in julia set
+	POWR=2                          # powr of Z in iteration function
+	CX=0.01                          # position of x center (good for julia set)
+	CY=-0.55                        # position of y center (good for julia set)
+	CX=0.413238151606368892027      # position of y center (good for mandelbrot set)
+	CY=-1.24254013716898265806      # position of y center	 (good for mandelbrot set)
+	# CX=0      # position of y center
+	# CY=0      # position of y center	
+	MANDELBROT=1                    # 1 = mandelbrot set , 0 = julia set
+	FLAG_ZOOM=True                  # Flag Zoom the image
+	FRAMEEVERY=100                   # number of frames not calculated between two calculated
+	COMPLEX_CAL=True                 # calculation with custom complex opencl definition
+	CYCLEFRAMEBASE=100
+	CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
+
 	set_start_method("spawn")
 
 	loops=MAX-MIN
-	opencl_ctx=opencl_py(0,'julia')
+	if COMPLEX_CAL:
+		opencl_ctx=opencl_py(0,'julia_c')
+	else:
+		opencl_ctx=opencl_py(0,'julia')
+
 	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS_X":str(OUTPUT_SIZE_IN_PIXELS_X),
 						"OUTPUT_SIZE_IN_PIXELS_Y":str(OUTPUT_SIZE_IN_PIXELS_Y),
 						"MAX_ITERATIONS":str(MAX_ITERATIONS),
@@ -206,20 +225,29 @@ if __name__ == "__main__":
 	figuresize_y=OUTPUT_SIZE_IN_PIXELS_X/100
 	figuresize_x=OUTPUT_SIZE_IN_PIXELS_Y/100
 
-	if loops>CYCLEFRAME:
-		nrloops=loops//CYCLEFRAME		
 
-	zoomnp=np.linspace(0,1, num=loops//FRAMEEVERY)
+	if loops>CYCLEFRAME:
+		cycleframe=CYCLEFRAME
+		frameevery=FRAMEEVERY
+	else:
+		cycleframe=CYCLEFRAMEBASE
+		frameevery=1
+
+	nrloops=loops//cycleframe		
+	zoomnp=np.linspace(0,1, num=loops//frameevery)
 	counter=0
 	ccycle=0
 	video_list=[]
 	jobs=[]
 	for xcycle in range(nrloops):
-		min=MIN+ccycle*CYCLEFRAME
-		max=min+CYCLEFRAME
+		min=MIN+ccycle*cycleframe
+		max=min+cycleframe
 		result_matrix=[]
-		for i in range (min,max,FRAMEEVERY):
-			z=zoomnp[counter]
+		for i in range (min,max,frameevery):
+			if FLAG_ZOOM:
+				z=zoomnp[counter]
+			else:
+				z=0
 			result_matrix.append(opencl_ctx.run_julia(i,i/50,z))
 			counter+=1
 			#f_matrix_gen((opencl_ctx,i,i/40)))
@@ -237,7 +265,7 @@ if __name__ == "__main__":
 		fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
 		filename='img/julia'+str(ccycle)+'.mp4'
 		video_list.append(filename)
-		
+
 		while True:
 			pcs = len(multiprocessing.active_children())
 			if pcs<4:
@@ -253,4 +281,4 @@ if __name__ == "__main__":
 		ccycle+=1
 	for job in jobs:
 		job.join()
-	concatenate(video_list)	
+	concatenate(video_list)
