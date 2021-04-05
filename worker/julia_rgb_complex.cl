@@ -195,9 +195,9 @@ __kernel void julia(
 	//j=cfloat_mul(j,cfloat_powr(j,rot));
 	//m=julia_iterations(C,j,rot,input_i,input_thre);
 	if (lid_z==0) {m=julia_iterations(C,j,rot,MAX_ITERATIONS,l_input_thre);}
-	if (gid_x==OUTPUT_SIZE_IN_PIXELS_X/2 && gid_y==OUTPUT_SIZE_IN_PIXELS_Y/2 && gid_z==1 )
-		{printf("x %lf y %lf iterations %d input_i %d red %d green %d blue %d coeff %4.4f j.x %1.4f j.y %1.4f \n",
-		x,y,m.iters,input_i,m.r,m.g,m.b,m.coeff,j.x,j.y);}
+	// if (gid_x==OUTPUT_SIZE_IN_PIXELS_X/2 && gid_y==OUTPUT_SIZE_IN_PIXELS_Y/2 && gid_z==1 )
+	// 	{printf("x %lf y %lf iterations %d input_i %d red %d green %d blue %d coeff %4.4f j.x %1.4f j.y %1.4f \n",
+	// 	x,y,m.iters,input_i,m.r,m.g,m.b,m.coeff,j.x,j.y);}
 
 	uint pos0 = gid_y+gid_x*OUTPUT_SIZE_IN_PIXELS_Y;
 	//uint pos = pos0 + OUTPUT_SIZE_IN_PIXELS*OUTPUT_SIZE_IN_PIXELS*gid_z;

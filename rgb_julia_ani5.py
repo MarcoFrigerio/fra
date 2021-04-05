@@ -74,6 +74,9 @@ class opencl_py:
 	def run_julia(self,input_i,thre,x_range,y_range):
 		julia_shape=(OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,4)
 		mf = cl.mem_flags# opencl memflag enum
+		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
+		# zoom=1-(c-1)/c
+
 		matrix_generation_domain_x = np.linspace(-x_range+CX, x_range+CX, num=OUTPUT_SIZE_IN_PIXELS_X,dtype=np.float64)
 		matrix_generation_domain_y = np.linspace(-y_range+CY, y_range+CY, num=OUTPUT_SIZE_IN_PIXELS_Y,dtype=np.float64)
 
@@ -109,16 +112,16 @@ class opencl_py:
 		result_g.release()
 		return result
 
-# def rescale_linear(array):
-# 	"""Rescale an arrary linearly."""
-# 	# result_matrix=np.asarray(array)
-# 	new_min=0
-# 	new_max=255
-# 	minimum, maximum = np.amin(array), np.amax(array)
-# 	m = (new_max - new_min) / (maximum - minimum)
-# 	b = new_min - m * minimum
-# 	result_matrix = m * np.asarray(array) + b
-# 	return result_matrix.astype(int) 
+def rescale_linear(array):
+	"""Rescale an arrary linearly."""
+	# result_matrix=np.asarray(array)
+	new_min=0
+	new_max=255
+	minimum, maximum = np.amin(array), np.amax(array)
+	m = (new_max - new_min) / (maximum - minimum)
+	b = new_min - m * minimum
+	result_matrix = m * np.asarray(array) + b
+	return result_matrix.astype(int) 
 
 def save_file( filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 	print("LOOP ANIMATION LOAD....")
@@ -168,7 +171,7 @@ def concatenate(video_list):
 		for fts in elenco_file_temp:
 			f.write("file '"+fts.lstrip("img/")+"'\n")
 		
-	stringa = "ffmpeg -y -f concat -safe 0 -i "+input_file_list+" -c copy output.mp4"
+	stringa = "ffmpeg -y -f concat -safe 0 -i "+input_file_list+" -c copy output.mp4 "
 
 	# print(stringa)
 	os.system(stringa)
@@ -176,13 +179,13 @@ def concatenate(video_list):
 if __name__ == "__main__":
 	# OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
 	# OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
-	OUTPUT_SIZE_IN_PIXELS_X = 1440  # number of rows
-	OUTPUT_SIZE_IN_PIXELS_Y = 2560  # number of columns
-	X_RANGE=1                    # initial range of  values  in y axis
+	OUTPUT_SIZE_IN_PIXELS_X = 1440  # number of columns
+	OUTPUT_SIZE_IN_PIXELS_Y = 2560  # number of rows
+	X_RANGE=1                   # initial start range of y values 
 	MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
 	MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z
 	MIN=1                       # start point of C values 
-	MAX=12_000                        # end point of C values
+	MAX=10_000_000_000                        # end point of C values
 	SPEEDF = 0.1                    # speed of change of C value in julia set
 	POWR=2                          # powr of Z in iteration function
 	CX=0.01                          # position of x center (good for julia set)
@@ -192,14 +195,15 @@ if __name__ == "__main__":
 	# CX=0      # position of y center
 	# CY=0      # position of y center	
 	MANDELBROT=1                    # 1 = mandelbrot set , 0 = julia set
-	FLAG_ZOOM=True                  # Flag Zoom the image (true or false)
-	FRAMEEVERY=20                   # number of frames not calculated between two calculated
-	COMPLEX_CAL=True                 # calculation with custom (64bit real and 64 bit imaginary) complex opencl definition
-	CYCLEFRAMEBASE=60                #number of frame in one file saved
+	FLAG_ZOOM=True                  # Flag Zoom the image
+	FRAMEEVERY=1_000_000                   # number of frames not calculated between two calculated
+	COMPLEX_CAL=True                 # calculation with custom complex opencl definition
+	CYCLEFRAMEBASE=60
 	CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
 
 	set_start_method("spawn")
 
+	loops=MAX-MIN
 	if COMPLEX_CAL:
 		opencl_ctx=opencl_py(0,'julia_c')
 	else:
@@ -215,13 +219,8 @@ if __name__ == "__main__":
 
 	figuresize_y=OUTPUT_SIZE_IN_PIXELS_X/100
 	figuresize_x=OUTPUT_SIZE_IN_PIXELS_Y/100
-
-	video_list=[]
-	jobs=[]
-	xrangel=[]
-	ccycle=0
-	loops=MAX-MIN
 	screen_format=OUTPUT_SIZE_IN_PIXELS_Y/OUTPUT_SIZE_IN_PIXELS_X
+
 
 	if loops>CYCLEFRAME:
 		cycleframe=CYCLEFRAME
@@ -229,69 +228,68 @@ if __name__ == "__main__":
 	else:
 		cycleframe=CYCLEFRAMEBASE
 		frameevery=1
+
+	start=time.time()
 	nrloops=loops//cycleframe		
-	zoomnp=np.linspace(0,1, num=loops//frameevery)
+	counter=0
+	ccycle=0
+	video_list=[]
+	jobs=[]
+	for xcycle in range(nrloops):
+		min=MIN+ccycle*cycleframe
+		max=min+cycleframe
+		result_matrix=[]
+		for i in range (min,max,frameevery):
+			if FLAG_ZOOM:
+				xrange=np.float64((MAX-i)/(MAX+i*60))
+				zoomnp=np.linspace(0,xrange, num=loops//frameevery,dtype=np.float64)
+				z=np.float64(zoomnp[counter])
+				zoom=np.float64((1-z)/(100*z+1))
+				# print(f"i {zoom}"):w
+				zoom=zoom=np.float64(zoom**(xcycle+1))
+				x_range=np.float64(xrange*(zoom))
+				y_range=np.float64(x_range*screen_format)
+			else:
+				xrange=X_RANGE
+				z=0
+			actual_time=round(time.time()-start)
+			perc=i/MAX
+			print(f"{i:,}/{MAX:,} {perc:.0%} seconds {actual_time} init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
+			result_matrix.append(opencl_ctx.run_julia(i,i/50,x_range,y_range))
+			counter+=1
+			#f_matrix_gen((opencl_ctx,i,i/40)))
+		# print("RESCALING RGB VALUES..")
+		# with Pool() as p:
+		# 	result_matrix=p.map(rescal	e_linear,result_matrix)
+		# print("BEGIN PLOTTING IMAGING..")
 
+		# ani.save('julia.mp4',fps=30,extra_args=["-threads", "4"])
+		# with Pool() as p:
+		# 	p.map(save_file,[(ims,ccycle,figuresize_x,figuresize_y)])
 
-	xrangel.append(X_RANGE)
-	if FLAG_ZOOM:
-		for i in range(1,4):
-			xrangel.append(xrangel[i-1]/10)
-		x_rangep=np.float64(X_RANGE)
+		ims = []
+		fig=plt.figure(figsize=(figuresize_x, figuresize_y))
+		fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
+		sstcy=str(ccycle).rjust(5,'0')
+		filename='img/julia'+sstcy+'.mp4'
+		video_list.append(filename)
 
-	icycle=0
-	for xrange in xrangel:
-		counter=0
-		for _ in range(nrloops):
-			min=MIN+icycle*cycleframe
-			max=min+cycleframe
-			result_matrix=[]
-			for i in range (min,max,frameevery):
-				if FLAG_ZOOM:
-					z=zoomnp[counter]
-					zoom=(1-z)/(60*z+1)
-					# print(f"i {zoom}")
-					x_range=np.float64(xrange*(zoom))
-					if x_rangep>=x_range:
-						y_range=np.float64(x_range*screen_format)
-						print(f"loop {i} initial xrange {xrange } descaling zoom : {zoom} - new xrange {x_range}")
-						result_matrix.append(opencl_ctx.run_julia(i,i/50,x_range,y_range))
-					x_rangep=x_range
-				else:
-					z=0
-					result_matrix.append(opencl_ctx.run_julia(i,i/50,x_range,y_range))
-				counter+=1
-				#f_matrix_gen((opencl_ctx,i,i/40)))
-			# print("RESCALING RGB VALUES..")
-			# with Pool() as p:
-			# 	result_matrix=p.map(rescal	e_linear,result_matrix)
-			# print("BEGIN PLOTTING IMAGING..")
-
-			# ani.save('julia.mp4',fps=30,extra_args=["-threads", "4"])
-			# with Pool() as p:
-			# 	p.map(save_file,[(ims,ccycle,figuresize_x,figuresize_y)])
-
-			ims = []
-			fig=plt.figure(figsize=(figuresize_x, figuresize_y))
-			fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
-			strccycle=str(ccycle).rjust(5,'0')
-			filename='img/julia'+strccycle+'.mp4'
-			video_list.append(filename)
-
-			while True:
-				pcs = len(multiprocessing.active_children())
-				if pcs<4:
-					p = Process(target=save_file,args=(filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
-					jobs.append(p)
-					p.start()
-					break
-				time.sleep(1)
-			# p.join()
-			# del result_matrix
-			# ani.save('img/julia'+str(ccycle)+'.mp4',fps=60,extra_args=["-threads", "4"])
-			# ani.save('julia'+str(ccycle)+'.mp4',fps=15,extra_args=["-threads", "4","-codec","hevc"])
-			ccycle+=1
-			icycle+=1
+		while True:
+			pcs = len(multiprocessing.active_children())
+			if pcs<4:
+				p = Process(target=save_file,args=(filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
+				jobs.append(p)
+				p.start()
+				break
+			time.sleep(1)
+		# p.join()
+		# del result_matrix
+		# ani.save('img/julia'+str(ccycle)+'.mp4',fps=60,extra_args=["-threads", "4"])
+		# ani.save('julia'+str(ccycle)+'.mp4',fps=15,extra_args=["-threads", "4","-codec","hevc"])
+		ccycle+=1
+	print("WAITING FOR ALL JOBS TO FINISH...")
 	for job in jobs:
 		job.join()
+	print("CREATING VIDEO...")
 	concatenate(video_list)
+	print("VIDEO CREATED!")
