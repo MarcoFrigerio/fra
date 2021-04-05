@@ -17,6 +17,8 @@ from multiprocessing import set_start_method
 # from multiprocessing import get_context
 from PIL import Image
 import time
+import math
+import concatenate as coca
 
 
 class opencl_py:
@@ -112,17 +114,6 @@ class opencl_py:
 		result_g.release()
 		return result
 
-def rescale_linear(array):
-	"""Rescale an arrary linearly."""
-	# result_matrix=np.asarray(array)
-	new_min=0
-	new_max=255
-	minimum, maximum = np.amin(array), np.amax(array)
-	m = (new_max - new_min) / (maximum - minimum)
-	b = new_min - m * minimum
-	result_matrix = m * np.asarray(array) + b
-	return result_matrix.astype(int) 
-
 def save_file( filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 	print("LOOP ANIMATION LOAD....")
 	nr_im=len(result_matrix)
@@ -151,30 +142,30 @@ def save_file( filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
 	ani.save(filename,fps=60,extra_args=["-threads", "4"])
 
-def concatenate(video_list):
-	elenco_file_temp = []
-	for f in video_list:
-		file = "img/temp" + str(video_list.index(f) ) + ".ts"
-		os.system("ffmpeg -y -i " + f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
-		elenco_file_temp.append(file)
-	# print(elenco_file_temp)
-	stringa = "ffmpeg -y -i \"concat:"
-	# for f in elenco_file_temp:
-	# 	stringa += f
-	# 	# if elenco_file_temp.index(f) != len(elenco_file_temp)-1:
-		# 	stringa += "|"
-		# else:
-		# 	stringa += "\" -c copy  -bsf:a aac_adtstoasc output.mp4"
-		# for f in elenco_file_temp:
-	input_file_list="img/input_file_list"
-	with open(input_file_list,"w") as f:
-		for fts in elenco_file_temp:
-			f.write("file '"+fts.lstrip("img/")+"'\n")
+# def concatenate(video_list):
+# 	elenco_file_temp = []
+# 	for f in video_list:
+# 		file = "img/temp" + str(video_list.index(f) ) + ".ts"
+# 		os.system("ffmpeg -y -i " + f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
+# 		elenco_file_temp.append(file)
+# 	# print(elenco_file_temp)
+# 	stringa = "ffmpeg -y -i \"concat:"
+# 	# for f in elenco_file_temp:
+# 	# 	stringa += f
+# 	# 	# if elenco_file_temp.index(f) != len(elenco_file_temp)-1:
+# 		# 	stringa += "|"
+# 		# else:
+# 		# 	stringa += "\" -c copy  -bsf:a aac_adtstoasc output.mp4"
+# 		# for f in elenco_file_temp:
+# 	input_file_list="img/input_file_list"
+# 	with open(input_file_list,"w") as f:
+# 		for fts in elenco_file_temp:
+# 			f.write("file '"+fts.lstrip("img/")+"'\n")
 		
-	stringa = "ffmpeg -y -f concat -safe 0 -i "+input_file_list+" -c copy output.mp4 "
+# 	stringa = "ffmpeg -y -f concat -safe 0 -i "+input_file_list+" -c copy output.mp4 "
 
-	# print(stringa)
-	os.system(stringa)
+# 	# print(stringa)
+# 	os.system(stringa)
 
 if __name__ == "__main__":
 	# OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
@@ -185,18 +176,21 @@ if __name__ == "__main__":
 	MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
 	MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z
 	MIN=1                       # start point of C values 
-	MAX=10_000_000_000                        # end point of C values
+	MAX=1_000_000_000                        # end point of C values
 	SPEEDF = 0.1                    # speed of change of C value in julia set
 	POWR=2                          # powr of Z in iteration function
 	CX=0.01                          # position of x center (good for julia set)
 	CY=-0.55                        # position of y center (good for julia set)
 	CX=0.413238151606368892027      # position of y center (good for mandelbrot set)
 	CY=-1.24254013716898265806      # position of y center	 (good for mandelbrot set)
+	DIR="img/"                   # working dir
+	CX=math.e/20
+	CY=math.e/7
 	# CX=0      # position of y center
 	# CY=0      # position of y center	
 	MANDELBROT=1                    # 1 = mandelbrot set , 0 = julia set
 	FLAG_ZOOM=True                  # Flag Zoom the image
-	FRAMEEVERY=1_000_000                   # number of frames not calculated between two calculated
+	FRAMEEVERY=5_000_000                   # number of frames not calculated between two calculated
 	COMPLEX_CAL=True                 # calculation with custom complex opencl definition
 	CYCLEFRAMEBASE=60
 	CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
@@ -245,8 +239,9 @@ if __name__ == "__main__":
 				zoomnp=np.linspace(0,xrange, num=loops//frameevery,dtype=np.float64)
 				z=np.float64(zoomnp[counter])
 				zoom=np.float64((1-z)/(100*z+1))
-				# print(f"i {zoom}"):w
-				zoom=zoom=np.float64(zoom**(xcycle+1))
+				# print(f"i {zoom}"):
+				exp=(10*i+MAX)/MAX
+				zoom=zoom=np.float64(zoom**exp)
 				x_range=np.float64(xrange*(zoom))
 				y_range=np.float64(x_range*screen_format)
 			else:
@@ -271,8 +266,9 @@ if __name__ == "__main__":
 		fig=plt.figure(figsize=(figuresize_x, figuresize_y))
 		fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
 		sstcy=str(ccycle).rjust(5,'0')
-		filename='img/julia'+sstcy+'.mp4'
-		video_list.append(filename)
+		filen='julia'+sstcy+'.mp4'
+		video_list.append(filen)
+		filename=DIR+'julia'+sstcy+'.mp4'
 
 		while True:
 			pcs = len(multiprocessing.active_children())
@@ -291,5 +287,5 @@ if __name__ == "__main__":
 	for job in jobs:
 		job.join()
 	print("CREATING VIDEO...")
-	concatenate(video_list)
+	coca.concatenate(DIR,video_list)
 	print("VIDEO CREATED!")
