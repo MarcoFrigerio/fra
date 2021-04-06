@@ -176,24 +176,27 @@ if __name__ == "__main__":
 	MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
 	MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z
 	MIN=1                       # start point of C values 
-	MAX=1_000_000_000                        # end point of C values
+	# MAX=70_000_000_000                        # end point of C values
+	# FRAMEEVERY=4_000_000                   # number of frames not calculated between two calculated
+	MAX=70_000                        # end point of C values
+	FRAMEEVERY=50                   # number of frames not calculated between two calculated
+
+	CYCLEFRAMEBASE=60
+	CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
 	SPEEDF = 0.1                    # speed of change of C value in julia set
 	POWR=2                          # powr of Z in iteration function
 	CX=0.01                          # position of x center (good for julia set)
 	CY=-0.55                        # position of y center (good for julia set)
-	CX=0.413238151606368892027      # position of y center (good for mandelbrot set)
-	CY=-1.24254013716898265806      # position of y center	 (good for mandelbrot set)
+	CX=np.float128(0.413238151606368892027)      # position of y center (good for mandelbrot set)
+	CY=np.float128(-1.24254013716898265806)      # position of y center	 (good for mandelbrot set)
 	DIR="img/"                   # working dir
-	CX=math.e/20
-	CY=math.e/7
+	# CX=math.e/20
+	# CY=math.e/7
 	# CX=0      # position of y center
 	# CY=0      # position of y center	
 	MANDELBROT=1                    # 1 = mandelbrot set , 0 = julia set
 	FLAG_ZOOM=True                  # Flag Zoom the image
-	FRAMEEVERY=5_000_000                   # number of frames not calculated between two calculated
 	COMPLEX_CAL=True                 # calculation with custom complex opencl definition
-	CYCLEFRAMEBASE=60
-	CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
 
 	set_start_method("spawn")
 
@@ -229,19 +232,20 @@ if __name__ == "__main__":
 	ccycle=0
 	video_list=[]
 	jobs=[]
+	expl=np.linspace(1,5, num=loops//frameevery,dtype=np.float64)
 	for xcycle in range(nrloops):
 		min=MIN+ccycle*cycleframe
 		max=min+cycleframe
 		result_matrix=[]
 		for i in range (min,max,frameevery):
 			if FLAG_ZOOM:
-				xrange=np.float64((MAX-i)/(MAX+i*60))
+				xrange=np.float64((MAX-i)/(MAX+i*20))
 				zoomnp=np.linspace(0,xrange, num=loops//frameevery,dtype=np.float64)
 				z=np.float64(zoomnp[counter])
-				zoom=np.float64((1-z)/(100*z+1))
+				zoom=np.float64((xrange-z)/(50*z+xrange))
 				# print(f"i {zoom}"):
-				exp=(10*i+MAX)/MAX
-				zoom=zoom=np.float64(zoom**exp)
+				exp=np.float64(expl[counter])
+				zoom=zoom=np.float128(zoom**exp)
 				x_range=np.float64(xrange*(zoom))
 				y_range=np.float64(x_range*screen_format)
 			else:
