@@ -17,8 +17,10 @@ from multiprocessing import set_start_method
 # from multiprocessing import get_context
 from PIL import Image
 import time
+import datetime
 import math
 import concatenate as coca
+from colorama import Fore
 
 
 class opencl_py:
@@ -100,7 +102,9 @@ class opencl_py:
 
 		finish_event=self.prg.julia(self.queue,
 			julia_shape,
-			(1,1,4),#None ,
+			# (1,1,4), 
+			(8,16,4), 
+			# None,
 			gD_gx,
 			gD_gy,
 			input_ib,
@@ -114,7 +118,10 @@ class opencl_py:
 		result_g.release()
 		return result
 
-def save_file( filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
+def printtime(actual_time):
+	return datetime.timedelta(seconds=actual_time)
+
+def save_file( dir,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 	print("LOOP ANIMATION LOAD....")
 	nr_im=len(result_matrix)
 	ims=[]
@@ -127,8 +134,8 @@ def save_file( filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 		# print(f"image {i}")
 		# iml.append(img)
 		if i==1:
-			img = Image.fromarray(result_matrix[i].astype('uint8'), 'RGBA')
-			img.save("img/"+str(i)+".png")
+			img=Image.fromarray(result_matrix[i].astype('uint8'), 'RGBA')
+			img.save(dir+str(i)+".png")
 		im=plt.imshow(result_matrix[i],animated=True,interpolation="bilinear")
 		# plt.show()
 		ims.append([im])
@@ -140,32 +147,10 @@ def save_file( filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 		pass
 	plt.axis("off")
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
-	ani.save(filename,fps=60,extra_args=["-threads", "4"])
+	ani.save(dir+filename,fps=60,extra_args=["-threads", "4"])
 
-# def concatenate(video_list):
-# 	elenco_file_temp = []
-# 	for f in video_list:
-# 		file = "img/temp" + str(video_list.index(f) ) + ".ts"
-# 		os.system("ffmpeg -y -i " + f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
-# 		elenco_file_temp.append(file)
-# 	# print(elenco_file_temp)
-# 	stringa = "ffmpeg -y -i \"concat:"
-# 	# for f in elenco_file_temp:
-# 	# 	stringa += f
-# 	# 	# if elenco_file_temp.index(f) != len(elenco_file_temp)-1:
-# 		# 	stringa += "|"
-# 		# else:
-# 		# 	stringa += "\" -c copy  -bsf:a aac_adtstoasc output.mp4"
-# 		# for f in elenco_file_temp:
-# 	input_file_list="img/input_file_list"
-# 	with open(input_file_list,"w") as f:
-# 		for fts in elenco_file_temp:
-# 			f.write("file '"+fts.lstrip("img/")+"'\n")
-		
-# 	stringa = "ffmpeg -y -f concat -safe 0 -i "+input_file_list+" -c copy output.mp4 "
-
-# 	# print(stringa)
-# 	os.system(stringa)
+def actual_time(start):
+	return round(round(time.time())-start)
 
 if __name__ == "__main__":
 	# OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
@@ -173,14 +158,16 @@ if __name__ == "__main__":
 	OUTPUT_SIZE_IN_PIXELS_X = 1440  # number of columns
 	OUTPUT_SIZE_IN_PIXELS_Y = 2560  # number of rows
 	X_RANGE=1                   # initial start range of y values 
-	MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
+	# MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
+	MAX_ITERATIONS = 1_000             # max number of iterations in single pixel opencl calculation
 	MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z
 	MIN=1                       # start point of C values 
 	# MAX=70_000_000_000                        # end point of C values
 	# FRAMEEVERY=4_000_000                   # number of frames not calculated between two calculated
-	MAX=70_000                        # end point of C values
-	FRAMEEVERY=50                   # number of frames not calculated between two calculated
-
+	# MAX=1_400_000                        # end point of C values
+	# FRAMEEVERY=300                   # number of frames not calculated between two calculated
+	MAX=1_400_000                        # end point of C values
+	FRAMEEVERY=300                   # number of frames not calculated between two calculated
 	CYCLEFRAMEBASE=60
 	CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
 	SPEEDF = 0.1                    # speed of change of C value in julia set
@@ -189,6 +176,10 @@ if __name__ == "__main__":
 	CY=-0.55                        # position of y center (good for julia set)
 	CX=np.float128(0.413238151606368892027)      # position of y center (good for mandelbrot set)
 	CY=np.float128(-1.24254013716898265806)      # position of y center	 (good for mandelbrot set)
+	# CY = -0.7746806106269039		
+	# CX = 0.1374168856037867
+	# CX=-0.6413130610648031748603750151793020665794949522823052595561775430644485741727536902556370230689681162370740565537072149790106973211105273740851993394803287437606238596262287731075999483940467161288840614581091294325709988992269165007394305732683208318834672366947550710920088501655704252385244481168836426277052232593412981472237968353661477793530336607247738951625817755401065045362273039788332245567345061665756708689359294516668271440525273653083717877701237756144214394870245598590883973716531691124286669552803640414068523325276808909040317617092683826521501539932397262012011082098721944643118695001226048977430038509470101715555439047884752058334804891389685530946112621573416582482926221804767466258346014417934356149837352092608891639072745930639364693513216719114523328990690069588676087923656657656023794484324797546024248328156586471662631008741349069961493817600100133439721557969263221185095951241491408756751582471307537382827924073746760884081704887902040036056611401378785952452105099242499241003208013460878442953408648178692353788153787229940221611731034405203519945313911627314900851851072122990492499999999999999999991
+	# CY=0.360240443437614363236125244449545308482607807958585750488375814740195346059218100311752936722773426396233731729724987737320035372683285317664532401218521579554288661726564324134702299962817029213329980895208036363104546639698106204384566555001322985619004717862781192694046362748742863016467354574422779443226982622356594130430232458472420816652623492974891730419252651127672782407292315574480207005828774566475024380960675386215814315654794021855269375824443853463117354448779647099224311848192893972572398662626725254769950976527431277402440752868498588785436705371093442460696090720654908973712759963732914849861213100695402602927267843779747314419332179148608587129105289166676461292845685734536033692577618496925170576714796693411776794742904333484665301628662532967079174729170714156810530598764525260869731233845987202037712637770582084286587072766838497865108477149114659838883818795374195150936369987302574377608649625020864292915913378927790344097552591919409137354459097560040374880346637533711271919419723135538377394364882968994646845930838049998854075817859391340445151448381853615103761584177161812057928
 	DIR="img/"                   # working dir
 	# CX=math.e/20
 	# CY=math.e/7
@@ -218,7 +209,6 @@ if __name__ == "__main__":
 	figuresize_x=OUTPUT_SIZE_IN_PIXELS_Y/100
 	screen_format=OUTPUT_SIZE_IN_PIXELS_Y/OUTPUT_SIZE_IN_PIXELS_X
 
-
 	if loops>CYCLEFRAME:
 		cycleframe=CYCLEFRAME
 		frameevery=FRAMEEVERY
@@ -226,17 +216,18 @@ if __name__ == "__main__":
 		cycleframe=CYCLEFRAMEBASE
 		frameevery=1
 
-	start=time.time()
+	start=round(time.time())
 	nrloops=loops//cycleframe		
 	counter=0
 	ccycle=0
 	video_list=[]
 	jobs=[]
-	expl=np.linspace(1,5, num=loops//frameevery,dtype=np.float64)
+	expl=np.linspace(1,3.95, num=loops//frameevery,dtype=np.float64)
 	for xcycle in range(nrloops):
 		min=MIN+ccycle*cycleframe
 		max=min+cycleframe
 		result_matrix=[]
+		cor=1
 		for i in range (min,max,frameevery):
 			if FLAG_ZOOM:
 				xrange=np.float64((MAX-i)/(MAX+i*20))
@@ -245,16 +236,18 @@ if __name__ == "__main__":
 				zoom=np.float64((xrange-z)/(50*z+xrange))
 				# print(f"i {zoom}"):
 				exp=np.float64(expl[counter])
-				zoom=zoom=np.float128(zoom**exp)
+				zoom=np.float128(zoom**exp)
 				x_range=np.float64(xrange*(zoom))
 				y_range=np.float64(x_range*screen_format)
 			else:
 				xrange=X_RANGE
 				z=0
-			actual_time=round(time.time()-start)
 			perc=i/MAX
-			print(f"{i:,}/{MAX:,} {perc:.0%} seconds {actual_time} init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
+			estimated_time=round(actual_time(start)*(MAX/i) - actual_time(start))
+			print(f"{Fore.YELLOW}{perc:.0%} {i:,}/{MAX:,} {Fore.CYAN} {cor}/{CYCLEFRAMEBASE} {Fore.RESET} {Fore.GREEN}{printtime(actual_time(start))}{Fore.RESET} {Fore.RED}{printtime(estimated_time)} {Fore.RESET} \
+init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 			result_matrix.append(opencl_ctx.run_julia(i,i/50,x_range,y_range))
+			cor+=1
 			counter+=1
 			#f_matrix_gen((opencl_ctx,i,i/40)))
 		# print("RESCALING RGB VALUES..")
@@ -272,12 +265,12 @@ if __name__ == "__main__":
 		sstcy=str(ccycle).rjust(5,'0')
 		filen='julia'+sstcy+'.mp4'
 		video_list.append(filen)
-		filename=DIR+'julia'+sstcy+'.mp4'
+		filename='julia'+sstcy+'.mp4'
 
 		while True:
 			pcs = len(multiprocessing.active_children())
 			if pcs<4:
-				p = Process(target=save_file,args=(filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
+				p = Process(target=save_file,args=(DIR,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
 				jobs.append(p)
 				p.start()
 				break
@@ -291,5 +284,6 @@ if __name__ == "__main__":
 	for job in jobs:
 		job.join()
 	print("CREATING VIDEO...")
+	mean_time_for_frame=actual_time(start)/counter
 	coca.concatenate(DIR,video_list)
-	print("VIDEO CREATED!")
+	print(f"VIDEO CREATED! Elapsed {Fore.GREEN}{printtime(actual_time(start))} -  Mean time for frame {printtime(mean_time_for_frame)}{Fore.RESET}")
