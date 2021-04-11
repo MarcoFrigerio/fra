@@ -1,11 +1,20 @@
+import subprocess
 import os
+
+def exec_string(stringa,dirb,fileout,fileerr):
+	with open(dirb+fileout,"w") as fout:
+		with open(dirb+fileerr,"w") as ferr:
+			out=subprocess.run([stringa],stdout=fout,stderr=ferr,shell=True)
+			return(out.returncode)
 
 def concatenate(dirb,video_list):
 	elenco_file_temp = []
 	for f in video_list:
 		if f.endswith(".mp4"):
 			file = dirb+"temp" + str(video_list.index(f)).rjust(5,'0')  + ".ts"
-			os.system("ffmpeg -y -i " + dirb+f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file)
+			stringa="ffmpeg -y -i " + dirb+f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file
+			out=exec_string(stringa,dirb,"video_out_stout.log","video_out_stout.log")
+			if out!=0:return out
 			elenco_file_temp.append(file)
 	# print(elenco_file_temp)
 	stringa = "ffmpeg -y -i \"concat:"
@@ -24,7 +33,8 @@ def concatenate(dirb,video_list):
 	stringa = "ffmpeg -y -f concat -safe 0 -i "+input_file_list+" -c copy output.mp4 "
 
 	# print(stringa)
-	os.system(stringa)
+	out=exec_string(stringa,dirb,"video_all_stout.log","video_all_stout.log")
+	return out
 
 if __name__ =="__main__":
 	DIR="img/"

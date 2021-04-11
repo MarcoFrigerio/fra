@@ -21,6 +21,7 @@ import datetime
 import math
 import concatenate as coca
 from colorama import Fore
+import julia_parm as s
 
 
 class opencl_py:
@@ -76,13 +77,13 @@ class opencl_py:
 
 
 	def run_julia(self,input_i,thre,x_range,y_range):
-		julia_shape=(OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,4)
+		julia_shape=(s.OUTPUT_SIZE_IN_PIXELS_X,s.OUTPUT_SIZE_IN_PIXELS_Y,4)
 		mf = cl.mem_flags# opencl memflag enum
 		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
 		# zoom=1-(c-1)/c
 
-		matrix_generation_domain_x = np.linspace(-x_range+CX, x_range+CX, num=OUTPUT_SIZE_IN_PIXELS_X,dtype=np.float64)
-		matrix_generation_domain_y = np.linspace(-y_range+CY, y_range+CY, num=OUTPUT_SIZE_IN_PIXELS_Y,dtype=np.float64)
+		matrix_generation_domain_x = np.linspace(-x_range+s.CX, x_range+s.CX, num=s.OUTPUT_SIZE_IN_PIXELS_X,dtype=np.float64)
+		matrix_generation_domain_y = np.linspace(-y_range+s.CY, y_range+s.CY, num=s.OUTPUT_SIZE_IN_PIXELS_Y,dtype=np.float64)
 
 		# matrix_generation_domain_x=matrix_generation_domain_x
 		# matrix_generation_domain_x=matrix_generation_domain_y
@@ -153,67 +154,69 @@ def actual_time(start):
 	return round(round(time.time())-start)
 
 if __name__ == "__main__":
-	# OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
-	# OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
-	OUTPUT_SIZE_IN_PIXELS_X = 1440  # number of columns
-	OUTPUT_SIZE_IN_PIXELS_Y = 2560  # number of rows
-	X_RANGE=1                   # initial start range of y values 
-	# MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
-	MAX_ITERATIONS = 1_000             # max number of iterations in single pixel opencl calculation
-	MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z
-	MIN=1                       # start point of C values 
-	# MAX=70_000_000_000                        # end point of C values
-	# FRAMEEVERY=4_000_000                   # number of frames not calculated between two calculated
+	# # OUTPUT_SIZE_IN_PIXELS_X = 1080 # number of columns
+	# # OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
+	# OUTPUT_SIZE_IN_PIXELS_X = 1440  # number of columns
+	# OUTPUT_SIZE_IN_PIXELS_Y = 2560  # number of rows
+	# X_RANGE=1                   # initial start range of y values 
+	# # MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
+	# MAX_ITERATIONS = 2_000             # max number of iterations in single pixel opencl calculation
+	# MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z=
+	# MIN=1                       # start point of C values 
+	# # MAX=70_000_000_000                        # end point of C values
+	# # FRAMEEVERY=4_000_000                   # number of frames not calculated between two calculated
+	# # MAX=1_400_000                        # end point of C values
+	# # FRAMEEVERY=200                   # number of frames not calculated between two calculated
 	# MAX=1_400_000                        # end point of C values
-	# FRAMEEVERY=300                   # number of frames not calculated between two calculated
-	MAX=1_400_000                        # end point of C values
-	FRAMEEVERY=300                   # number of frames not calculated between two calculated
-	CYCLEFRAMEBASE=60
-	CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
-	SPEEDF = 0.1                    # speed of change of C value in julia set
-	POWR=2                          # powr of Z in iteration function
-	CX=0.01                          # position of x center (good for julia set)
-	CY=-0.55                        # position of y center (good for julia set)
-	CX=np.float128(0.413238151606368892027)      # position of y center (good for mandelbrot set)
-	CY=np.float128(-1.24254013716898265806)      # position of y center	 (good for mandelbrot set)
-	# CY = -0.7746806106269039		
-	# CX = 0.1374168856037867
-	# CX=-0.6413130610648031748603750151793020665794949522823052595561775430644485741727536902556370230689681162370740565537072149790106973211105273740851993394803287437606238596262287731075999483940467161288840614581091294325709988992269165007394305732683208318834672366947550710920088501655704252385244481168836426277052232593412981472237968353661477793530336607247738951625817755401065045362273039788332245567345061665756708689359294516668271440525273653083717877701237756144214394870245598590883973716531691124286669552803640414068523325276808909040317617092683826521501539932397262012011082098721944643118695001226048977430038509470101715555439047884752058334804891389685530946112621573416582482926221804767466258346014417934356149837352092608891639072745930639364693513216719114523328990690069588676087923656657656023794484324797546024248328156586471662631008741349069961493817600100133439721557969263221185095951241491408756751582471307537382827924073746760884081704887902040036056611401378785952452105099242499241003208013460878442953408648178692353788153787229940221611731034405203519945313911627314900851851072122990492499999999999999999991
-	# CY=0.360240443437614363236125244449545308482607807958585750488375814740195346059218100311752936722773426396233731729724987737320035372683285317664532401218521579554288661726564324134702299962817029213329980895208036363104546639698106204384566555001322985619004717862781192694046362748742863016467354574422779443226982622356594130430232458472420816652623492974891730419252651127672782407292315574480207005828774566475024380960675386215814315654794021855269375824443853463117354448779647099224311848192893972572398662626725254769950976527431277402440752868498588785436705371093442460696090720654908973712759963732914849861213100695402602927267843779747314419332179148608587129105289166676461292845685734536033692577618496925170576714796693411776794742904333484665301628662532967079174729170714156810530598764525260869731233845987202037712637770582084286587072766838497865108477149114659838883818795374195150936369987302574377608649625020864292915913378927790344097552591919409137354459097560040374880346637533711271919419723135538377394364882968994646845930838049998854075817859391340445151448381853615103761584177161812057928
-	DIR="img/"                   # working dir
-	# CX=math.e/20
-	# CY=math.e/7
-	# CX=0      # position of y center
-	# CY=0      # position of y center	
-	MANDELBROT=1                    # 1 = mandelbrot set , 0 = julia set
-	FLAG_ZOOM=True                  # Flag Zoom the image
-	COMPLEX_CAL=True                 # calculation with custom complex opencl definition
+	# FRAMEEVERY=20_000                   # number of frames not calculated between two calculated
+	# CYCLEFRAMEBASE=60
+	# CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
+	# SPEEDF = 0.1                    # speed of change of C value in julia set
+	# POWR=2                          # powr of Z in iteration function
+	# CX=0.01                          # position of x center (good for julia set)
+	# CY=-0.55                        # position of y center (good for julia set)
+	# CX=np.float128(0.413238151606368892027)      # position of y center (good for mandelbrot set)
+	# CY=np.float128(-1.24254013716898265806)      # position of y center	 (good for mandelbrot set)
+	# CX = 0.1374168856037867 
+	# CY = -0.7746806106269039
+	# # CY = -0.7746806106269039		
+	# # CX = 0.1374168856037867
+	# # CX=-0.6413130610648031748603750151793020665794949522823052595561775430644485741727536902556370230689681162370740565537072149790106973211105273740851993394803287437606238596262287731075999483940467161288840614581091294325709988992269165007394305732683208318834672366947550710920088501655704252385244481168836426277052232593412981472237968353661477793530336607247738951625817755401065045362273039788332245567345061665756708689359294516668271440525273653083717877701237756144214394870245598590883973716531691124286669552803640414068523325276808909040317617092683826521501539932397262012011082098721944643118695001226048977430038509470101715555439047884752058334804891389685530946112621573416582482926221804767466258346014417934356149837352092608891639072745930639364693513216719114523328990690069588676087923656657656023794484324797546024248328156586471662631008741349069961493817600100133439721557969263221185095951241491408756751582471307537382827924073746760884081704887902040036056611401378785952452105099242499241003208013460878442953408648178692353788153787229940221611731034405203519945313911627314900851851072122990492499999999999999999991
+	# # CY=0.360240443437614363236125244449545308482607807958585750488375814740195346059218100311752936722773426396233731729724987737320035372683285317664532401218521579554288661726564324134702299962817029213329980895208036363104546639698106204384566555001322985619004717862781192694046362748742863016467354574422779443226982622356594130430232458472420816652623492974891730419252651127672782407292315574480207005828774566475024380960675386215814315654794021855269375824443853463117354448779647099224311848192893972572398662626725254769950976527431277402440752868498588785436705371093442460696090720654908973712759963732914849861213100695402602927267843779747314419332179148608587129105289166676461292845685734536033692577618496925170576714796693411776794742904333484665301628662532967079174729170714156810530598764525260869731233845987202037712637770582084286587072766838497865108477149114659838883818795374195150936369987302574377608649625020864292915913378927790344097552591919409137354459097560040374880346637533711271919419723135538377394364882968994646845930838049998854075817859391340445151448381853615103761584177161812057928
+	# DIR="img/"                   # working dir
+	# # CX=math.e/20
+	# # CY=math.e/7
+	# # CX=0      # position of y center
+	# # CY=0      # position of y center	
+	# MANDELBROT=1                    # 1 = mandelbrot set , 0 = julia set
+	# FLAG_ZOOM=True                  # Flag Zoom the image
+	# COMPLEX_CAL=True                 # calculation with custom complex opencl definition
 
 	set_start_method("spawn")
 
-	loops=MAX-MIN
-	if COMPLEX_CAL:
+	loops=s.MAX-s.MIN
+	if s.COMPLEX_CAL:
 		opencl_ctx=opencl_py(0,'julia_c')
 	else:
 		opencl_ctx=opencl_py(0,'julia')
 
-	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS_X":str(OUTPUT_SIZE_IN_PIXELS_X),
-						"OUTPUT_SIZE_IN_PIXELS_Y":str(OUTPUT_SIZE_IN_PIXELS_Y),
-						"MAX_ITERATIONS":str(MAX_ITERATIONS),
-						"MANDELBROT_THRESHOLD":str(MANDELBROT_THRESHOLD),
-						"SPEEDF":str(SPEEDF),
-						"MANDELBROT":str(MANDELBROT),
-						"POWR":str(POWR)})
+	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS_X":str(s.OUTPUT_SIZE_IN_PIXELS_X),
+						"OUTPUT_SIZE_IN_PIXELS_Y":str(s.OUTPUT_SIZE_IN_PIXELS_Y),
+						"MAX_ITERATIONS":str(s.MAX_ITERATIONS),
+						"MANDELBROT_THRESHOLD":str(s.MANDELBROT_THRESHOLD),
+						"SPEEDF":str(s.SPEEDF),
+						"MANDELBROT":str(s.MANDELBROT),
+						"POWR":str(s.POWR)})
 
-	figuresize_y=OUTPUT_SIZE_IN_PIXELS_X/100
-	figuresize_x=OUTPUT_SIZE_IN_PIXELS_Y/100
-	screen_format=OUTPUT_SIZE_IN_PIXELS_Y/OUTPUT_SIZE_IN_PIXELS_X
+	figuresize_y=s.OUTPUT_SIZE_IN_PIXELS_X/100
+	figuresize_x=s.OUTPUT_SIZE_IN_PIXELS_Y/100
+	screen_format=s.OUTPUT_SIZE_IN_PIXELS_Y/s.OUTPUT_SIZE_IN_PIXELS_X
 
-	if loops>CYCLEFRAME:
-		cycleframe=CYCLEFRAME
-		frameevery=FRAMEEVERY
+	if loops>s.CYCLEFRAME:
+		cycleframe=s.CYCLEFRAME
+		frameevery=s.FRAMEEVERY
 	else:
-		cycleframe=CYCLEFRAMEBASE
+		cycleframe=s.CYCLEFRAMEBASE
 		frameevery=1
 
 	start=round(time.time())
@@ -222,42 +225,33 @@ if __name__ == "__main__":
 	ccycle=0
 	video_list=[]
 	jobs=[]
-	expl=np.linspace(1,3.95, num=loops//frameevery,dtype=np.float64)
+	expl=np.linspace(1,3, num=loops//frameevery,dtype=np.float64)
 	for xcycle in range(nrloops):
-		min=MIN+ccycle*cycleframe
+		min=s.MIN+ccycle*cycleframe
 		max=min+cycleframe
 		result_matrix=[]
 		cor=1
 		for i in range (min,max,frameevery):
-			if FLAG_ZOOM:
-				xrange=np.float64((MAX-i)/(MAX+i*20))
+			if s.FLAG_ZOOM:
+				xrange=np.float64((s.MAX-i)/(s.MAX+i*20))
 				zoomnp=np.linspace(0,xrange, num=loops//frameevery,dtype=np.float64)
 				z=np.float64(zoomnp[counter])
 				zoom=np.float64((xrange-z)/(50*z+xrange))
 				# print(f"i {zoom}"):
 				exp=np.float64(expl[counter])
-				zoom=np.float128(zoom**exp)
+				zoom=np.float64(zoom**exp)
 				x_range=np.float64(xrange*(zoom))
 				y_range=np.float64(x_range*screen_format)
 			else:
-				xrange=X_RANGE
+				xrange=s.X_RANGE
 				z=0
-			perc=i/MAX
-			estimated_time=round(actual_time(start)*(MAX/i) - actual_time(start))
-			print(f"{Fore.YELLOW}{perc:.0%} {i:,}/{MAX:,} {Fore.CYAN} {cor}/{CYCLEFRAMEBASE} {Fore.RESET} {Fore.GREEN}{printtime(actual_time(start))}{Fore.RESET} {Fore.RED}{printtime(estimated_time)} {Fore.RESET} \
+			perc=i/s.MAX
+			estimated_time=round(actual_time(start)*(s.MAX/i) - actual_time(start))
+			print(f"{Fore.YELLOW}{perc:.0%} {i:,}/{s.MAX:,} {Fore.CYAN} {cor}/{s.CYCLEFRAMEBASE} {Fore.RESET} {Fore.GREEN}{printtime(actual_time(start))}{Fore.RESET} {Fore.RED}{printtime(estimated_time)} {Fore.RESET} \
 init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 			result_matrix.append(opencl_ctx.run_julia(i,i/50,x_range,y_range))
 			cor+=1
 			counter+=1
-			#f_matrix_gen((opencl_ctx,i,i/40)))
-		# print("RESCALING RGB VALUES..")
-		# with Pool() as p:
-		# 	result_matrix=p.map(rescal	e_linear,result_matrix)
-		# print("BEGIN PLOTTING IMAGING..")
-
-		# ani.save('julia.mp4',fps=30,extra_args=["-threads", "4"])
-		# with Pool() as p:
-		# 	p.map(save_file,[(ims,ccycle,figuresize_x,figuresize_y)])
 
 		ims = []
 		fig=plt.figure(figsize=(figuresize_x, figuresize_y))
@@ -270,20 +264,19 @@ init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 		while True:
 			pcs = len(multiprocessing.active_children())
 			if pcs<4:
-				p = Process(target=save_file,args=(DIR,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
+				p = Process(target=save_file,args=(s.DIR,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y,))
 				jobs.append(p)
 				p.start()
 				break
 			time.sleep(1)
-		# p.join()
-		# del result_matrix
-		# ani.save('img/julia'+str(ccycle)+'.mp4',fps=60,extra_args=["-threads", "4"])
-		# ani.save('julia'+str(ccycle)+'.mp4',fps=15,extra_args=["-threads", "4","-codec","hevc"])
+
 		ccycle+=1
 	print("WAITING FOR ALL JOBS TO FINISH...")
 	for job in jobs:
 		job.join()
 	print("CREATING VIDEO...")
 	mean_time_for_frame=actual_time(start)/counter
-	coca.concatenate(DIR,video_list)
-	print(f"VIDEO CREATED! Elapsed {Fore.GREEN}{printtime(actual_time(start))} -  Mean time for frame {printtime(mean_time_for_frame)}{Fore.RESET}")
+	out=coca.concatenate(s.DIR,video_list)
+	if out==0:print(f"{Fore.LIGHTGREEN_EX}VIDEO CREATED! {Fore.RESET} ")
+	else:print("{Fore.RED}ERROR IN VIDEO CREATION!!! {Fore.RESET} ")
+	print(f"Elapsed {Fore.GREEN}{printtime(actual_time(start))} -  Mean time for frame {printtime(mean_time_for_frame)}{Fore.RESET}")
