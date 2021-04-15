@@ -2,6 +2,7 @@
 
 
 import multiprocessing
+from types import FrameType
 import PIL
 # from numpy.core.fromnumeric import repeat
 import pyopencl as cl
@@ -77,7 +78,9 @@ class opencl_py:
 
 
 	def run_julia(self,input_i,thre,x_range,y_range):
-		julia_shape=(s.OUTPUT_SIZE_IN_PIXELS_X,s.OUTPUT_SIZE_IN_PIXELS_Y,4)
+		julia_shape=(s.OUTPUT_SIZE_IN_PIXELS_X,s.OUTPUT_SIZE_IN_PIXELS_Y,s.RGB)
+		if s.RGB==3:workgroup_shape=(16,16,1)
+		if s.RGB==4:workgroup_shape=(8,16,4)
 		mf = cl.mem_flags# opencl memflag enum
 		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
 		# zoom=1-(c-1)/c
@@ -93,7 +96,7 @@ class opencl_py:
 		gD_npy = np.array(matrix_generation_domain_y,dtype=np.float64)
 		gD_gy = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=gD_npy)
 
-		input_ib=np.int32(input_i)
+		input_ib=np.float64(input_i)
 		input_thre=np.float32(thre)
 
 		result = np.empty(julia_shape, dtype=np.uint32)	
@@ -104,7 +107,7 @@ class opencl_py:
 		finish_event=self.prg.julia(self.queue,
 			julia_shape,
 			# (1,1,4), 
-			(8,16,4), 
+			workgroup_shape,
 			# None,
 			gD_gx,
 			gD_gy,
@@ -134,8 +137,11 @@ def save_file( dir,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize
 		# img.show()
 		# print(f"image {i}")
 		# iml.append(img)
-		if i==1:
-			img=Image.fromarray(result_matrix[i].astype('uint8'), 'RGBA')
+		if i==nr_im-1:
+			if s.RGB==3:rgb='RGB'
+			if s.RGB==4:rgb='RGBA'
+			img=Image.fromarray(result_matrix[i].astype('uint8'), rgb)
+			# img.show()
 			img.save(dir+str(i)+".png")
 		im=plt.imshow(result_matrix[i],animated=True,interpolation="bilinear")
 		# plt.show()
@@ -155,10 +161,10 @@ def actual_time(start):
 
 if __name__ == "__main__":
 
-
 	set_start_method("spawn")
 	try:os.mkdir(s.DIR)
 	except:pass
+	assert (s.RGB==3 or s.RGB==4)
 
 	loops=s.MAX-s.MIN
 	if s.COMPLEX_CAL:
@@ -172,7 +178,9 @@ if __name__ == "__main__":
 						"MANDELBROT_THRESHOLD":str(s.MANDELBROT_THRESHOLD),
 						"SPEEDF":str(s.SPEEDF),
 						"MANDELBROT":str(s.MANDELBROT),
-						"POWR":str(s.POWR)})
+						"POWR":str(s.POWR),
+						"RGB":str(s.RGB)
+						})
 
 	figuresize_y=s.OUTPUT_SIZE_IN_PIXELS_X/100
 	figuresize_x=s.OUTPUT_SIZE_IN_PIXELS_Y/100
@@ -189,9 +197,10 @@ if __name__ == "__main__":
 	nrloops=loops//cycleframe		
 	counter=0
 	ccycle=0
+	countertot=0
 	video_list=[]
 	jobs=[]
-	expl=np.linspace(1,3, num=loops//frameevery,dtype=np.float64)
+	expl=np.linspace(1,1, num=loops//frameevery,dtype=np.float64)
 	for xcycle in range(nrloops):
 		min=s.MIN+ccycle*cycleframe
 		max=min+cycleframe
@@ -209,15 +218,18 @@ if __name__ == "__main__":
 				x_range=np.float64(xrange*(zoom))
 				y_range=np.float64(x_range*screen_format)
 			else:
-				xrange=s.X_RANGE
+				xrange=x_range=s.X_RANGE
+				y_range=x_range*screen_format
 				z=0
+				zoom=0
 			perc=i/s.MAX
 			estimated_time=round(actual_time(start)*(s.MAX/i) - actual_time(start))
 			print(f"{Fore.YELLOW}{perc:.0%} {i:,}/{s.MAX:,} {Fore.CYAN} {cor}/{s.CYCLEFRAMEBASE} {Fore.RESET} {Fore.GREEN}{printtime(actual_time(start))}{Fore.RESET} {Fore.RED}{printtime(estimated_time)} {Fore.RESET} \
 init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
-			result_matrix.append(opencl_ctx.run_julia(i,i/50,x_range,y_range))
+			result_matrix.append(opencl_ctx.run_julia(counter/(loops//frameevery),i/50,x_range,y_range))
 			cor+=1
 			counter+=1
+
 
 		ims = []
 		fig=plt.figure(figsize=(figuresize_x, figuresize_y))
