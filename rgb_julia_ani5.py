@@ -151,7 +151,7 @@ def save_file( dir,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize
 	try:
 		plt.rcParams['animation.ffmpeg_path'] = '/usr/bin/ffmpeg'
 	except:
-		pass
+		pass	
 	plt.axis("off")
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
 	ani.save(dir+filename,fps=60,extra_args=["-threads", "4"])
@@ -179,7 +179,9 @@ if __name__ == "__main__":
 						"SPEEDF":str(s.SPEEDF),
 						"MANDELBROT":str(s.MANDELBROT),
 						"POWR":str(s.POWR),
-						"RGB":str(s.RGB)
+						"RGB":str(s.RGB),
+						"JX":str(s.JX),
+						"JY":str(s.JY)
 						})
 
 	figuresize_y=s.OUTPUT_SIZE_IN_PIXELS_X/100
@@ -200,7 +202,9 @@ if __name__ == "__main__":
 	countertot=0
 	video_list=[]
 	jobs=[]
-	expl=np.linspace(1,1, num=loops//frameevery,dtype=np.float64)
+	cloops=loops//frameevery
+	expl=np.linspace(1,1, num=cloops,dtype=np.float64)
+	rotlnsp=np.linspace(0,math.pi*2, num=cloops,dtype=np.float64)
 	for xcycle in range(nrloops):
 		min=s.MIN+ccycle*cycleframe
 		max=min+cycleframe
@@ -209,7 +213,7 @@ if __name__ == "__main__":
 		for i in range (min,max,frameevery):
 			if s.FLAG_ZOOM:
 				xrange=np.float64((s.MAX-i)/(s.MAX+i*20))
-				zoomnp=np.linspace(0,xrange, num=loops//frameevery,dtype=np.float64)
+				zoomnp=np.linspace(0,xrange, num=cloops,dtype=np.float64)
 				z=np.float64(zoomnp[counter])
 				zoom=np.float64((xrange-z)/(50*z+xrange))
 				# print(f"i {zoom}"):
@@ -226,7 +230,10 @@ if __name__ == "__main__":
 			estimated_time=round(actual_time(start)*(s.MAX/i) - actual_time(start))
 			print(f"{Fore.YELLOW}{perc:.0%} {i:,}/{s.MAX:,} {Fore.CYAN} {cor}/{s.CYCLEFRAMEBASE} {Fore.RESET} {Fore.GREEN}{printtime(actual_time(start))}{Fore.RESET} {Fore.RED}{printtime(estimated_time)} {Fore.RESET} \
 init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
-			result_matrix.append(opencl_ctx.run_julia(counter/(loops//frameevery),i/50,x_range,y_range))
+			# input_i = counter/cloops
+			# input_i = counter
+			input_i=rotlnsp[counter]
+			result_matrix.append(opencl_ctx.run_julia(input_i,i/50,x_range,y_range))
 			cor+=1
 			counter+=1
 
