@@ -1,5 +1,6 @@
 import subprocess
 import os
+from colorama import Fore
 
 def exec_string(stringa,dirb,fileout,fileerr):
 	with open(dirb+fileout,"w") as fout:
@@ -18,8 +19,9 @@ def concatenate(dirb,video_list):
 			file = dirb+"temp" + findex  + ".ts"
 			stringa="ffmpeg -y -i " + dirb+f + " -c copy -bsf:v h264_mp4toannexb -f mpegts " + file
 			out=exec_string(stringa,logdir,"video_out_stout_"+findex+".log","video_out_sterr_"+findex+".log")
-			if out!=0:return out
-			elenco_file_temp.append(file)
+			if out!=0:
+				print(f'{Fore.RED}ERROR WORKING {file} {Fore.RESET}')
+			else:elenco_file_temp.append(file)
 	# print(elenco_file_temp)
 	stringa = "ffmpeg -y -i \"concat:"
 

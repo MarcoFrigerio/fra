@@ -82,7 +82,7 @@ class opencl_py:
 		if s.RGB==3:workgroup_shape=(16,16,1)
 		if s.RGB==4:workgroup_shape=(8,16,4)
 		mf = cl.mem_flags# opencl memflag enum
-		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBROT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
+		# matrix_generation_domain = np.linspace(-MANDELBROT_THRESHOLD, MANDELBRT_THRESHOLD, num=OUTPUT_SIZE_IN_PIXELS)
 		# zoom=1-(c-1)/c
 
 		matrix_generation_domain_x = np.linspace(-x_range+s.CX, x_range+s.CX, num=s.OUTPUT_SIZE_IN_PIXELS_X,dtype=np.float64)
@@ -99,6 +99,9 @@ class opencl_py:
 		input_ib=np.float64(input_i)
 		input_thre=np.float32(thre)
 
+		rotx_i=s.fjx(input_i)
+		roty_i=s.fjy(input_i)
+
 		result = np.empty(julia_shape, dtype=np.uint32)	
 		result_g = cl.Buffer(self.ctx, mf.WRITE_ONLY,result.nbytes)# size should be in byte
 		
@@ -113,6 +116,8 @@ class opencl_py:
 			gD_gy,
 			input_ib,
 			input_thre,
+			rotx_i,
+			roty_i,
 			result_g )
 		finish_event.wait()
 		
@@ -203,7 +208,7 @@ if __name__ == "__main__":
 	video_list=[]
 	jobs=[]
 	cloops=loops//frameevery
-	expl=np.linspace(1,1, num=cloops,dtype=np.float64)
+	expl=np.linspace(1,s.EXPZOOM, num=cloops,dtype=np.float64)
 	rotlnsp=np.linspace(0,math.pi*2, num=cloops,dtype=np.float64)
 	for xcycle in range(nrloops):
 		min=s.MIN+ccycle*cycleframe
@@ -212,10 +217,10 @@ if __name__ == "__main__":
 		cor=1
 		for i in range (min,max,frameevery):
 			if s.FLAG_ZOOM:
-				xrange=np.float64((s.MAX-i)/(s.MAX+i*20))
+				xrange=s.calc_xrange(i)
 				zoomnp=np.linspace(0,xrange, num=cloops,dtype=np.float64)
 				z=np.float64(zoomnp[counter])
-				zoom=np.float64((xrange-z)/(50*z+xrange))
+				zoom=s.calc_zoom(xrange,z)
 				# print(f"i {zoom}"):
 				exp=np.float64(expl[counter])
 				zoom=np.float64(zoom**exp)

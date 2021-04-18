@@ -1,3 +1,5 @@
+import numpy as np
+import math
 # OUTPUT_SIZE_4N_PIXELS_X = 1080 # number of columns
 # OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
 RGB=3
@@ -6,7 +8,7 @@ OUTPUT_SIZE_IN_PIXELS_Y = 2560  # 2k number of rows
 # OUTPUT_SIZE_IN_PIXELS_X = 2160  # 4k number of columns
 # OUTPUT_SIZE_IN_PIXELS_Y = 3840  # 4k number of rows
 
-X_RANGE=.3                   # initial start range of y values 
+X_RANGE=.5                   # initial start range of y values 
 # MAX_ITERATIONS = 90             # max number of iterations in single pixel opencl calculation
 MAX_ITERATIONS = 2_000             # max number of iterations in single pixel opencl calculation
 MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z=
@@ -16,19 +18,19 @@ MIN=1                       # start point of C values
 # MAX=1_400_000                        # end point of C values
 # FRAMEEVERY=200                   # number of frames not calculated between two calculated
 MAX=1_400_000                        # end point of C values
-FRAMEEVERY=800                   # number of frames not calculated between two calculated
+FRAMEEVERY=500                   # number of frames not calculated between two calculated
 CYCLEFRAMEBASE=60
 CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
 SPEEDF =.02                    # speed of change of C value in julia set
 POWR=2                          # powr of Z in iteration function
-CX=0.01                          # position of x center (good for julia set)
-CY=-0.55                        # position of y center (good for julia set)
-CX=0.413238151606368892027      # position of y center (good for mandelbrot set)
-CY=-1.24254013716898265806      # position of y center	 (good for mandelbrot set)
-CX = 0.1374168856037867 
-CY = -0.7746806106269039
-CY = 0		
-CX = 0.5
+CX=-0.5                          # position of x center (good for julia set)
+CY=0                        # position of y center (good for julia set)
+# CX=0.413238151606368892027      # position of y center (good for mandelbrot set)
+# CY=-1.24254013716898265806      # position of y center	 (good for mandelbrot set)
+# CX = 0.1374168856037867 
+# CY = -0.7746806106269039
+# CY = 0.5		
+# CX = 0.28
 # CX=0.036170
 # CY=-0.020346 
 # CX=-0.6413130610648031748603750151793020665794949522823052595561775430644485741727536902556370230689681162370740565537072149790106973211105273740851993394803287437606238596262287731075999483940467161288840614581091294325709988992269165007394305732683208318834672366947550710920088501655704252385244481168836426277052232593412981472237968353661477793530336607247738951625817755401065045362273039788332245567345061665756708689359294516668271440525273653083717877701237756144214394870245598590883973716531691124286669552803640414068523325276808909040317617092683826521501539932397262012011082098721944643118695001226048977430038509470101715555439047884752058334804891389685530946112621573416582482926221804767466258346014417934356149837352092608891639072745930639364693513216719114523328990690069588676087923656657656023794484324797546024248328156586471662631008741349069961493817600100133439721557969263221185095951241491408756751582471307537382827924073746760884081704887902040036056611401378785952452105099242499241003208013460878442953408648178692353788153787229940221611731034405203519945313911627314900851851072122990492499999999999999999991
@@ -52,3 +54,20 @@ JY=-0.100362353515625       #inital coord of C imaginary value in julia set
 
 JX=-0.835
 JY=-0.232	
+JX=0.34676923076923083
+JY=-0.39276923076923026
+
+def fjx(input_i):
+	return np.float64(math.pow(math.cos(input_i),2)*math.sin(input_i)*SPEEDF)
+
+def fjy(input_i):
+	return np.float64(math.sin(input_i)*SPEEDF)
+
+def calc_xrange(input_i):
+	return (MAX-input_i)/(MAX+input_i*20)	
+
+def calc_zoom(xrange,z):
+	return np.float64((xrange-z)/(50*z+xrange))
+
+EXPZOOM=1
+
