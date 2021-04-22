@@ -77,7 +77,7 @@ class opencl_py:
 		print("KERNEL COMPILED")
 
 
-	def run_julia(self,input_i,thre,x_range,y_range):
+	def run_julia(self,input_i,thre,x_range,y_range,jiter):
 		julia_shape=(s.OUTPUT_SIZE_IN_PIXELS_X,s.OUTPUT_SIZE_IN_PIXELS_Y,s.RGB)
 		if s.RGB==3:workgroup_shape=(16,16,1)
 		if s.RGB==4:workgroup_shape=(8,16,4)
@@ -97,7 +97,8 @@ class opencl_py:
 		gD_gy = cl.Buffer(self.ctx, mf.READ_ONLY | mf.COPY_HOST_PTR, hostbuf=gD_npy)
 
 		input_ib=np.float64(input_i)
-		input_thre=np.float32(thre)
+		# input_thre=np.float32(thre)
+		input_jiter=np.float32(jiter)
 
 		rotx_i=s.fjx(input_i)
 		roty_i=s.fjy(input_i)
@@ -115,7 +116,7 @@ class opencl_py:
 			gD_gx,
 			gD_gy,
 			input_ib,
-			input_thre,
+			input_jiter,
 			rotx_i,
 			roty_i,
 			result_g )
@@ -208,7 +209,8 @@ if __name__ == "__main__":
 	video_list=[]
 	jobs=[]
 	cloops=loops//frameevery
-	expl=np.linspace(1,s.EXPZOOM, num=cloops,dtype=np.float64)
+	expl=np.linspace(s.EXPZOOMSTART,s.EXPZOOM, num=cloops,dtype=np.float64)
+	jiterl=np.linspace(s.MINJITER,s.MAXJITER, num=cloops,dtype=np.float64)
 	rotlnsp=np.linspace(0,math.pi*2, num=cloops,dtype=np.float64)
 	for xcycle in range(nrloops):
 		min=s.MIN+ccycle*cycleframe
@@ -226,6 +228,7 @@ if __name__ == "__main__":
 				zoom=np.float64(zoom**exp)
 				x_range=np.float64(xrange*(zoom))
 				y_range=np.float64(x_range*screen_format)
+				jiter=jiterl[counter]
 			else:
 				xrange=x_range=s.X_RANGE
 				y_range=x_range*screen_format
@@ -238,7 +241,7 @@ init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 			# input_i = counter/cloops
 			# input_i = counter
 			input_i=rotlnsp[counter]
-			result_matrix.append(opencl_ctx.run_julia(input_i,i/50,x_range,y_range))
+			result_matrix.append(opencl_ctx.run_julia(input_i,i/50,x_range,y_range,jiter))
 			cor+=1
 			counter+=1
 
