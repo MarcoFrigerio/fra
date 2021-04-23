@@ -16,7 +16,7 @@ MIN=1                       # start point of C values
 # MAX=70_000_000_000                        # end point of C values
 # FRAMEEVERY=5_500_000                   # number of frames not calculated between two calculated
 MAX=1_400_000                        # end point of C values
-FRAMEEVERY=300                   # number of frames not calculated between two calculated
+FRAMEEVERY=50                   # number of frames not calculated between two calculated
 # MAX=2_800_000                        # end point of C values
 # FRAMEEVERY=600                   # number of frames not calculated between two calculated
 CYCLEFRAMEBASE=60
@@ -53,7 +53,7 @@ JY=-0.100362353515625       #inital coord of C imaginary value in julia set
 # JY=.6121538462707095
 
 JX=-0.835
-JY=-0.232	
+JY=-0.232
 JX=0.34676923076923083
 JY=-0.39276923076923026
 
@@ -69,8 +69,8 @@ def calc_xrange(input_i):
 def calc_zoom(xrange,z):
 	return np.float64((xrange-z)/(100*z+xrange))
 
-EXPZOOMSTART=0.2
-EXPZOOM=2.5
+EXPZOOMSTART=0.05
+EXPZOOM=2.8
 
 MINJITER=80
 MAXJITER=4000

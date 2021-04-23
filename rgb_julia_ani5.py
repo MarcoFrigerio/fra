@@ -265,8 +265,7 @@ init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 
 		ccycle+=1
 	print("WAITING FOR ALL JOBS TO FINISH...")
-	for job in jobs:
-		job.join()
+	for job in jobs:job.join()
 	print("CREATING VIDEO...")
 	mean_time_for_frame=actual_time(start)/counter
 	out=coca.concatenate(s.DIR,video_list)
