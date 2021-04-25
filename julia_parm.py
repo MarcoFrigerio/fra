@@ -16,7 +16,7 @@ MIN=1                       # start point of C values
 # MAX=70_000_000_000                        # end point of C values
 # FRAMEEVERY=5_500_000                   # number of frames not calculated between two calculated
 MAX=1_400_000                        # end point of C values
-FRAMEEVERY=50                   # number of frames not calculated between two calculated
+FRAMEEVERY=200                   # number of frames not calculated between two calculated
 # MAX=2_800_000                        # end point of C values
 # FRAMEEVERY=600                   # number of frames not calculated between two calculated
 CYCLEFRAMEBASE=60
@@ -70,7 +70,7 @@ def calc_zoom(xrange,z):
 	return np.float64((xrange-z)/(100*z+xrange))
 
 EXPZOOMSTART=0.05
-EXPZOOM=2.8
+EXPZOOM=2.6
 
 MINJITER=80
 MAXJITER=4000
