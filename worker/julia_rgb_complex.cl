@@ -7,6 +7,9 @@
 #define SPEEDF 0.3
 #define RGB 4
 #define MANDELBROT 0
+#define JX 0
+#define JY 0
+#define PI 1.570796326794896619231321691639751442098584699
 
 typedef double2 cl_double_complex;
 typedef cl_double_complex cl_complex;
@@ -70,7 +73,6 @@ rgb julia_iterations(
 	// cfloat_t C,
 	cl_complex C,
 	cl_complex j,
-	float rot ,
 	uint input_i,
 	float input_thre)
 	{
@@ -81,44 +83,49 @@ rgb julia_iterations(
 		float speed;
 		float speediter1;
 		float absz;
+		float mean_speed;
 		const float maxrgb = 255.0;
 		// cfloat_t one;
 		// one.x=20/iterations;
 		// one.y=0;
 		// one=cfloat_add(j,one);
 		// cfloat_t Z = C;
-		cl_complex Z = C;
+		cl_complex Z;
+		if  (MANDELBROT==1){Z.x=0;Z.y=0;}
+		else {Z=C;}
 		#pragma unroll
-		//while (iterations < MAX_ITERATIONS){
+		// while (iterations < MAX_ITERATIONS){
 		while (iterations < input_i){
 			Z=cl_complex_ipow(&Z,POWR);
 			// Z=cl_complex_multiply(&Z,&Z);
+			// Z =cl_complex_add(&Z,&C);
 			Z =cl_complex_add(&Z,&j);
 			absz=cl_complex_modulus(&Z);
 			if (iterations==input_i-1){speediter1=absz;}
 			speed+=absz+speed0;
 			speed0=absz;
+			mean_speed=speed/iterations;
 			if(absz > input_thre){break;}
 			iterations++;
 			iterfloat=iterations;
 			}
 		
-		float coeff=(iterfloat/input_i)*128;
-		// float absz = cfloat_abs(Z);
-		// float absz = cl_romplex_modulus(&Z);
+		float perit = iterfloat/input_i;
+		float coeff=perit*255;
+		float i_x=perit;
+		float pi_x=perit*PI;
 		float r;float g; float b;
-		if (coeff<128){
-			r=fmin(maxrgb,coeff*(absz*5));
-			// float Z2=Z.y*Z.y;g=fmin(maxrgb,50*Z2);
-			g=255-fmin(absz*40,maxrgb);
-			b=min(maxrgb,(128*coeff/absz));
-			// rrgb.alpha=fmax(fmax(r,g),b);
-			}
-		else{
-			r=255-fmin(maxrgb,255*speediter1);//native_cos(absz)*255;
-			g=fmin(maxrgb,128*speediter1);
-			b=fmin(maxrgb,speed/coeff);
-			}
+		float xr=((-1)*pown((i_x-1),4)+1);
+		float yr=5/(exp(-1*pi_x+2))-5/3;
+		float par01 = 2.7;
+		// float xr=maxrgb*i_x;
+		r=fmin(maxrgb,maxrgb*xr);
+		g=fmax(fmin(maxrgb-75*absz*cos(pi_x),maxrgb),0);
+		// g=fmin(maxrgb,maxrgb*sin(pi_x)/(xr*absz));
+		// g=fmin(maxrgb,maxrgb*mean_speed*powr(cos(pi_x),12));
+		// g=fmin(255-4*absz*log2(speed*mean_speed),maxrgb);
+		// b=fmin(maxrgb,maxrgb*par01*mean_speed*sin(pi_x));			
+		b=fmin(maxrgb,maxrgb*par01*mean_speed*yr);			
 		rrgb.r=r;
 		rrgb.g=g;
 		rrgb.b=b;
@@ -136,8 +143,10 @@ rgb julia_iterations(
 __kernel void julia(
 	__global double * gDx,
 	__global double * gDy,
-	const unsigned int input_i,
-	const float input_thre,
+	const double input_i,
+	const float input_jiter,
+	const double rotx,
+	const double roty,
 	__global uint * result
 	)
 {
@@ -154,9 +163,9 @@ __kernel void julia(
 	if (gid_x==1 && gid_y==1 && gid_z==1 && input_i==1)
 	{
 		uint wksize=get_work_dim ();
-		size_t ls0=get_local_size(0);
-		size_t ls1=get_local_size(1);
-		size_t ls2=get_local_size(2);
+		uint ls1=get_local_size(1);
+		uint ls0=get_local_size(0);
+		uint ls2=get_local_size(2);
 
 		printf("wksize %d \n",wksize);
 		printf("par 0 %d \n",ls0);
@@ -166,42 +175,41 @@ __kernel void julia(
 		printf("size of x %d \n",sx);
 	}
 
+	// double rotx = pown(cos(input_i),3)*sin(input_i)*SPEEDF;
+	// double rotx = cos(input_i)*sin(input_i)*SPEEDF;
+	// double roty =sin(input_i)*SPEEDF;
 
-	float finput_i = input_i;
-	finput_i=cos(finput_i) ;
-	uint l_input_i=input_i;
-	//uint l_input_i=2*finput_i+input_i;
-	// if (gid_x==1000 && gid_y==1000 && gid_z==1 )
-	// 	{printf("input_i %d finput_i  %4.4f l_input_i %d  \n",input_i,finput_i,l_input_i);}
-
-
-	double l_input_thre=MANDELBROT_THRESHOLD;
-	double rot = l_input_i*l_input_thre/OUTPUT_SIZE_IN_PIXELS_Y*SPEEDF;
-	//float rot = l_input_thre/OUTPUT_SIZE_IN_PIXELS;
-	;//input_thre;
-	//if (gid_x==1000 && gid_y==1000){printf("gid_x %d - gid_y %d - gDx %4.4f - gDy %4.4f - rot %4.4f \n",gid_x,gid_y,x,y,rot);}
 	cl_complex C;
 	// cfloat_t C;
 	C.x=y;
 	C.y=x;
-	// cfloat_t j;
 	cl_complex j;
-	// j.x=-0.8+rot;
-	// j.y=-0.156-rot;	
-	j.x=-0.835+rot;
-	j.y=-0.232-rot;	
+	// j.x=-0.835+rot;
+	// // j.y=-0.232-rot;	
+	// j.x=0+rot;
+	// j.y=0-rot;
+	// j.x=-1.76938317919551501821384728608547378290574726365475143746552821652789971538042486160358350056705;
+	// j.y=0.00423684791873677221492650717136799707668267091740375727945943565011165050579686460572594185089;
+	j.x=JX-rotx;
+	j.y=JY+roty;
 	if (MANDELBROT==1) {j=C;}
+	// else{j=cl_complex_add(&C,&j);}
 	// __local rgb m;
 	// if (lid_z==0) {m=julia_iterations(C,j,rot,MAX_ITERATIONS,l_input_thre);}
 	rgb m;
-	m=julia_iterations(C,j,rot,MAX_ITERATIONS,l_input_thre);
+	// m=julia_iterations(C,j,MAX_ITERATIONS,MANDELBROT_THRESHOLD);
+	uint uint_jiters = (uint) input_jiter;
+	m=julia_iterations(C,j,input_jiter,MANDELBROT_THRESHOLD);
 
 	if (gid_x==OUTPUT_SIZE_IN_PIXELS_X/2 && gid_y==OUTPUT_SIZE_IN_PIXELS_Y/2 && gid_z==1 )
-		{printf("x %lf y %lf iterations %d/%d input_i %d red %d green %d blue %d coeff %4.4f j.x %1.4f j.y %1.4f \n",
-		x,y,m.iters,MAX_ITERATIONS,input_i,m.r,m.g,m.b,m.coeff,j.x,j.y);}
-
+		{printf("x %f y %f iterations %d/%d input_i %.8f red %d green %d blue %d par_par %4.4f j.x %f j.y %f \n",
+		x,y,m.iters,uint_jiters,input_i,m.r,m.g,m.b,m.coeff,j.x,j.y);}
+	if (gid_x==0 && gid_y==0 && gid_z==1 )
+		{printf("x %f y %f iterations %d/%d input_i %.8f red %d green %d blue %d par_par %4.4f j.x %5.4f j.y %5.4f \n",
+		x,y,m.iters,uint_jiters,input_i,m.r,m.g,m.b,m.coeff,j.x,j.y);}
 	uint pos0 = gid_y+gid_x*OUTPUT_SIZE_IN_PIXELS_Y;
 	uint pos=pos0*RGB+gid_z;
+
 	// if (lid_z==0){result[pos]=m.r;}
 	// if (lid_z==1){result[pos]=m.g;}
 	// if (lid_z==2){result[pos]=m.b;}
@@ -209,7 +217,7 @@ __kernel void julia(
 	if (gid_z==0){result[pos]=m.r;}
 	if (gid_z==1){result[pos]=m.g;}
 	if (gid_z==2){result[pos]=m.b;}
-	if (gid_z==3){result[pos]=m.alpha;}
+	if (gid_z==3 && RGB==4){result[pos]=m.alpha;}
 
 
 	//printf("gid_x |%d| - gid_y |%d| - gid_z |%d| - pos |%d| - pos0 |%d| m |%d| \n",gid_x,gid_y,gid_z,pos,pos0, m);
