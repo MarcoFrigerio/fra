@@ -23,6 +23,7 @@ import math
 import concatenate as coca
 from colorama import Fore
 import julia_parm as s
+import shutil
 
 
 class opencl_py:
@@ -161,6 +162,7 @@ def save_file( dir,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize
 	plt.axis("off")
 	ani = animation.ArtistAnimation(fig, ims, interval=0, blit=True,repeat_delay=0,repeat=True)
 	ani.save(dir+filename,fps=60,extra_args=["-threads", "4"])
+	# ani.save(dir+filename,fps=60)
 
 def actual_time(start):
 	return round(round(time.time())-start)
@@ -168,8 +170,9 @@ def actual_time(start):
 if __name__ == "__main__":
 
 	set_start_method("spawn")
-	try:os.mkdir(s.DIR)
+	try:shutil.rmtree(s.DIR)
 	except:pass
+	os.mkdir(s.DIR)
 	assert (s.RGB==3 or s.RGB==4)
 
 	loops=s.MAX-s.MIN
@@ -234,6 +237,7 @@ if __name__ == "__main__":
 				y_range=x_range*screen_format
 				z=0
 				zoom=0
+				jiter=0
 			perc=i/s.MAX
 			estimated_time=round(actual_time(start)*(s.MAX/i) - actual_time(start))
 			print(f"{Fore.YELLOW}{perc:.0%} {i:,}/{s.MAX:,} {Fore.CYAN} {cor}/{s.CYCLEFRAMEBASE} {Fore.RESET} {Fore.GREEN}{printtime(actual_time(start))}{Fore.RESET} {Fore.RED}{printtime(estimated_time)} {Fore.RESET} \

@@ -116,22 +116,24 @@ rgb julia_iterations(
 		float pi_x=perit*PI;
 		float r;float g; float b;
 		float xr=((-1)*pown((i_x-1),4)+1);
-		float yr=5/(exp(-1*pi_x+2))-5/3;
-		float par01 = 2.7;
+		// float yr=-pown((i_x-1),4)+1;
+		// float par01 = 2.9;
+		float par01 = log10((float)input_i);
 		// float xr=maxrgb*i_x;
 		r=fmin(maxrgb,maxrgb*xr);
-		g=fmax(fmin(maxrgb-75*absz*cos(pi_x),maxrgb),0);
+		g=fmax(fmin(maxrgb-73*absz*cos(pi_x),maxrgb),0);
+		// g=fmax(fmin(maxrgb*(1-xr)/par01,maxrgb),0);
 		// g=fmin(maxrgb,maxrgb*sin(pi_x)/(xr*absz));
 		// g=fmin(maxrgb,maxrgb*mean_speed*powr(cos(pi_x),12));
 		// g=fmin(255-4*absz*log2(speed*mean_speed),maxrgb);
 		// b=fmin(maxrgb,maxrgb*par01*mean_speed*sin(pi_x));			
-		b=fmin(maxrgb,maxrgb*par01*mean_speed*yr);			
+		b=fmin(maxrgb,maxrgb*absz*i_x*par01*mean_speed);			
 		rrgb.r=r;
 		rrgb.g=g;
 		rrgb.b=b;
 		rrgb.alpha=255;
 		rrgb.iters=iterations;
-		rrgb.coeff=absz;
+		rrgb.coeff=xr;
 		// if (coeff<128){rrgb.r=coeff*absz;rrgb.g=absz*50;rrgb.b=(2-absz)*128;}
 		// else{rrgb.r=absz*256;rrgb.g=absz*128;rrgb.b=(2-absz)*128;}
 		// // // rrgb.r=coeff;
@@ -188,18 +190,23 @@ __kernel void julia(
 	// // j.y=-0.232-rot;	
 	// j.x=0+rot;
 	// j.y=0-rot;
-	// j.x=-1.76938317919551501821384728608547378290574726365475143746552821652789971538042486160358350056705;
-	// j.y=0.00423684791873677221492650717136799707668267091740375727945943565011165050579686460572594185089;
-	j.x=JX-rotx;
-	j.y=JY+roty;
+
+
 	if (MANDELBROT==1) {j=C;}
+	else {
+		j.x=JX-rotx;
+		j.y=JY+roty;
+		}
+
 	// else{j=cl_complex_add(&C,&j);}
 	// __local rgb m;
 	// if (lid_z==0) {m=julia_iterations(C,j,rot,MAX_ITERATIONS,l_input_thre);}
-	rgb m;
+	// rgb m;
 	// m=julia_iterations(C,j,MAX_ITERATIONS,MANDELBROT_THRESHOLD);
-	uint uint_jiters = (uint) input_jiter;
-	m=julia_iterations(C,j,input_jiter,MANDELBROT_THRESHOLD);
+	uint uint_jiters;
+	if (MAX_ITERATIONS==0){uint_jiters = (uint) input_jiter;}
+	else {uint_jiters=MAX_ITERATIONS;}
+	rgb m=julia_iterations(C,j,uint_jiters,MANDELBROT_THRESHOLD);
 
 	if (gid_x==OUTPUT_SIZE_IN_PIXELS_X/2 && gid_y==OUTPUT_SIZE_IN_PIXELS_Y/2 && gid_z==1 )
 		{printf("x %f y %f iterations %d/%d input_i %.8f red %d green %d blue %d par_par %4.4f j.x %f j.y %f \n",

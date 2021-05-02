@@ -1,6 +1,6 @@
 import subprocess
 import os
-from colorama import Fore
+from colorama import Fore	
 
 def exec_string(stringa,dirb,fileout,fileerr):
 	with open(dirb+fileout,"w") as fout:
