@@ -18,7 +18,8 @@ from multiprocessing import set_start_method
 # from multiprocessing import get_context
 from PIL import Image
 import time
-import datetime
+import datetime as dt
+from datetime import datetime
 import math
 import concatenate as coca
 from colorama import Fore
@@ -129,8 +130,6 @@ class opencl_py:
 		result_g.release()
 		return result
 
-def printtime(actual_time):
-	return datetime.timedelta(seconds=actual_time)
 
 def save_file( dir,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
 	print("LOOP ANIMATION LOAD....")
@@ -165,10 +164,13 @@ def save_file( dir,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize
 	# ani.save(dir+filename,fps=60)
 
 def actual_time(start):
-	return round(round(time.time())-start)
+	return datetime.now()-start
 
-if __name__ == "__main__":
+def printtime(actual_time):
+	# return dt.timedelta(actual_time)
+	return str(actual_time).split('.', 2)[0]
 
+def julia():
 	set_start_method("spawn")
 	try:shutil.rmtree(s.DIR)
 	except:pass
@@ -176,11 +178,7 @@ if __name__ == "__main__":
 	assert (s.RGB==3 or s.RGB==4)
 
 	loops=s.MAX-s.MIN
-	if s.COMPLEX_CAL:
-		opencl_ctx=opencl_py(0,'julia_c')
-	else:
-		opencl_ctx=opencl_py(0,'julia')
-
+	opencl_ctx=opencl_py(0,'julia_c')
 	opencl_ctx.compile({"OUTPUT_SIZE_IN_PIXELS_X":str(s.OUTPUT_SIZE_IN_PIXELS_X),
 						"OUTPUT_SIZE_IN_PIXELS_Y":str(s.OUTPUT_SIZE_IN_PIXELS_Y),
 						"MAX_ITERATIONS":str(s.MAX_ITERATIONS),
@@ -204,7 +202,7 @@ if __name__ == "__main__":
 		cycleframe=s.CYCLEFRAMEBASE
 		frameevery=1
 
-	start=round(time.time())
+	start=datetime.now()
 	nrloops=loops//cycleframe		
 	counter=0
 	ccycle=0
@@ -215,7 +213,7 @@ if __name__ == "__main__":
 	expl=np.linspace(s.EXPZOOMSTART,s.EXPZOOM, num=cloops,dtype=np.float64)
 	jiterl=np.linspace(s.MINJITER,s.MAXJITER, num=cloops,dtype=np.float64)
 	rotlnsp=np.linspace(0,math.pi*2, num=cloops,dtype=np.float64)
-	for xcycle in range(nrloops):
+	for _ in range(nrloops):
 		min=s.MIN+ccycle*cycleframe
 		max=min+cycleframe
 		result_matrix=[]
@@ -239,7 +237,7 @@ if __name__ == "__main__":
 				zoom=0
 				jiter=0
 			perc=i/s.MAX
-			estimated_time=round(actual_time(start)*(s.MAX/i) - actual_time(start))
+			estimated_time=actual_time(start)*(s.MAX/i) - actual_time(start)
 			print(f"{Fore.YELLOW}{perc:.0%} {i:,}/{s.MAX:,} {Fore.CYAN} {cor}/{s.CYCLEFRAMEBASE} {Fore.RESET} {Fore.GREEN}{printtime(actual_time(start))}{Fore.RESET} {Fore.RED}{printtime(estimated_time)} {Fore.RESET} \
 init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 			# input_i = counter/cloops
@@ -276,3 +274,6 @@ init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 	if out==0:print(f"{Fore.LIGHTGREEN_EX}VIDEO CREATED! {Fore.RESET} ")
 	else:print("{Fore.RED}ERROR IN VIDEO CREATION!!! {Fore.RESET} ")
 	print(f"Elapsed {Fore.GREEN}{printtime(actual_time(start))} -  Mean time for frame {printtime(mean_time_for_frame)}{Fore.RESET}")
+
+if __name__ == "__main__":
+    julia()
