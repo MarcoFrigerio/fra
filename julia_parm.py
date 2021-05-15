@@ -1,38 +1,61 @@
 import numpy as np
 import math
+import json
+from distutils import util
+
+f="julia_parm.json"
+with open(f) as f:
+	params=json.load(f)
 # OUTPUT_SIZE_4N_PIXELS_X = 1080 # number of columns
 # OUTPUT_SIZE_IN_PIXELS_Y = 1920 # number of rows
-RGB=3
-OUTPUT_SIZE_IN_PIXELS_X = 1440  # 2k number of columns
-OUTPUT_SIZE_IN_PIXELS_Y = 2560  # 2k number of rows
+# RGB=3
+RGB=int(params["RGB"])
+# OUTPUT_SIZE_IN_PIXELS_X = 1440  # 2k number of columns
+OUTPUT_SIZE_IN_PIXELS_X = int(params["OUTPUT_SIZE_IN_PIXELS_X"])
+# OUTPUT_SIZE_IN_PIXELS_Y = 2560  # 2k number of rows
+OUTPUT_SIZE_IN_PIXELS_Y = int(params["OUTPUT_SIZE_IN_PIXELS_Y"])  # 2k number of rows
+
 # OUTPUT_SIZE_IN_PIXELS_X = 2160  # 4k number of columns
 # OUTPUT_SIZE_IN_PIXELS_Y = 3840  # 4k number of rows
 
-X_RANGE=.25                   # initial start range of y values 
-MAX_ITERATIONS =100             # If 0 then it s dinamic. Else, it s max number of iterations in single pixel opencl calculation. 
-MINJITER=80               # if dinamic, initial number of iterations 
-MAXJITER=5000             # if dinamic, final number of iterations 
+X_RANGE=float(params["X_RANGE"])                   # initial start range of y values 
+# X_RANGE=.25                   # initial start range of y values 
+# MAX_ITERATIONS =100             # If 0 then it s dinamic. Else, it s max number of iterations in single pixel opencl calculation. 
+MAX_ITERATIONS =int(params["MAX_ITERATIONS"])             # If 0 then it s dinamic. Else, it s max number of iterations in single pixel opencl calculation. 
+# MINJITER=80               # if dinamic, initial number of iterations 
+# MAXJITER=5000             # if dinamic, final number of iterations 
+MINJITER=int(params["MINJITER"])               # if dinamic, initial number of iterations 
+MAXJITER=int(params["MAXJITER"])             # if dinamic, final number of iterations 
 
-MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z=
-MIN=1                       # start point of C values 
+MANDELBROT_THRESHOLD = int(params["MANDELBROT_THRESHOLD"])        # thresold of the absolute value of reiterated Z=
+# MANDELBROT_THRESHOLD = 2        # thresold of the absolute value of reiterated Z=
+MIN=int(params["MIN"])                       # start point of C values 
+# MIN=1                       # start point of C values 
 # MAX=70_000_000_000                        # end point of C values
 # FRAMEEVERY=5_500_000                   # number of frames not calculated between two calculated
-MAX=1_400_000                        # end point of C values
-FRAMEEVERY=200                   # number of frames not calculated between two calculated
+# MAX=1_400_000                        # end point of C values
+MAX=int(params["MAX"])                        # end point of C values
+# FRAMEEVERY=200                   # number of frames not calculated between two calculated
+FRAMEEVERY=int(params["FRAMEEVERY"])                   # number of frames not calculated between two calculated
 # MAX=2_800_000                        # end point of C values
 # FRAMEEVERY=600                   # number of frames not calculated between two calculated
 
-CYCLEFRAMEBASE=60
+# CYCLEFRAMEBASE=60
+CYCLEFRAMEBASE=int(params["CYCLEFRAMEBASE"])
 CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
 
-SPEEDF =0.3                    # max delta of change of C value in julia set	
-POWR=2                          # powr of Z in iteration function
+# SPEEDF =0.3                    # max delta of change of C value in julia set	
+SPEEDF =float(params["SPEEDF"])                    # max delta of change of C value in julia set	
+# POWR=2                          # powr of Z in iteration function
+POWR=int(params["POWR"])                          # powr of Z in iteration function
 
 ############################
 # CX VALUES
 ############################
-CX=-.35                          # position of x center (good for julia set)
-CY=.5                        # position of y center (good for julia set)
+# CX=-.35                          # position of x center (good for julia set)
+CX=float(params["CX"])                          # position of x center (good for julia set)
+CY=float(params["CY"])                          # position of x center (good for julia set)
+# CY=.5                        # position of y center (good for julia set)
 # CX=0.413238151606368892027      # position of y center (good for mandelbrot set)
 # CY=-1.24254013716898265806      # position of y center	 (good for mandelbrot set)
 # CX = 0.1374168856037867 
@@ -52,10 +75,14 @@ CY=.5                        # position of y center (good for julia set)
 # CX=0      # position of y center
 # CY=0      # position of y center	
 
-DIR="img/"                   # working dir
-MANDELBROT=0                    # 1 = mandelbrot set , 0 = julia set
-FLAG_ZOOM=False                  # Flag Zoom the image
-FLAG_ROTATE=True               #apply a movement to j values
+# DIR="img/"                   # working dir
+DIR=params["DIR"]                   # working dir
+# MANDELBROT=0                    # 1 = mandelbrot set , 0 = julia set
+MANDELBROT= int(params["MANDELBROT"])                     # 1 = mandelbrot set , 0 = julia set
+# FLAG_ZOOM=False                  # Flag Zoom the image
+FLAG_ZOOM=bool(util.strtobool(params["FLAG_ZOOM"]))                  # Flag Zoom the image
+FLAG_ROTATE=bool(util.strtobool(params["FLAG_ROTATE"]))               #apply a movement to j values
+# FLAG_ROTATE=True               #apply a movement to j values
 
 
 ############################
@@ -69,11 +96,17 @@ FLAG_ROTATE=True               #apply a movement to j values
 # JY=-0.232
 # JX=0.34676923076923083
 # JY=-0.39276923076923026
-JX=-1.76938317919551501821384728608547378290574726365475143746552821652789971538042486160358350056705;
-JY=0.00423684791873677221492650717136799707668267091740375727945943565011165050579686460572594185089;
+# JX=-1.76938317919551501821384728608547378290574726365475143746552821652789971538042486160358350056705;
+# JY=0.00423684791873677221492650717136799707668267091740375727945943565011165050579686460572594185089;
 ############################
-JX=-0.5646996838777659
-JY=0.5586406768963872
+# JX=-0.5646996838777659
+# JY=0.5586406768963872
+JX=float(params["JX"])
+JY=float(params["JY"])
+# EXPZOOMSTART=0.05
+# EXPZOOM=2.6
+EXPZOOMSTART=float(params["EXPZOOMSTART"])
+EXPZOOM=float(params["EXPZOOM"])
 
 def fjx(input_i):
 	if FLAG_ROTATE:return np.float64(math.pow(math.cos(input_i),2)*math.sin(input_i)*SPEEDF)
@@ -89,6 +122,4 @@ def calc_xrange(input_i):
 def calc_zoom(xrange,z):
 	return np.float64((xrange-z)/(100*z+xrange))
 
-EXPZOOMSTART=0.05
-EXPZOOM=2.6
 
