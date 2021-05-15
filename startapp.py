@@ -27,7 +27,7 @@ class init_w:
 			self.mylabel[i].grid(row=i,column=0)
 			i+=1
 
-		self.start_button=tk.Button(self.w,text="StartCalculation",command=j.julia,state=DISABLED)
+		self.start_button=tk.Button(self.w,text="StartCalculation",command=lambda:j.julia(),state=DISABLED)
 		self.start_button.grid(row=i+2,column=0)
 		self.validate_button=tk.Button(self.w,text="Validate Values",command=self.validate_values)
 		self.validate_button.grid(row=i+1,column=0)
