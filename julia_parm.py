@@ -47,7 +47,7 @@ CYCLEFRAME=CYCLEFRAMEBASE*FRAMEEVERY
 # SPEEDF =0.3                    # max delta of change of C value in julia set	
 SPEEDF =float(params["SPEEDF"])                    # max delta of change of C value in julia set	
 # POWR=2                          # powr of Z in iteration function
-POWR=int(params["POWR"])                          # powr of Z in iteration function
+	POWR=int(params["POWR"])                          # powr of Z in iteration function
 
 ############################
 # CX VALUES

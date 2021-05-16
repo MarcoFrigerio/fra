@@ -86,6 +86,7 @@ class opencl_py:
 		print("KERNEL COMPILED")
 
 
+
 	def run_julia(self,input_i,thre,x_range,y_range,jiter):
 		def fjx(input_i):
 			if self.FLAG_ROTATE:return np.float64(math.pow(math.cos(input_i),2)*math.sin(input_i)*self.SPEEDF)
@@ -144,6 +145,47 @@ class opencl_py:
 		gD_gy.release()
 		result_g.release()
 		return result
+
+def run_julia_py(input_i,x_range,y_range,jiter,OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,RGB,SPEEDF,CX,CY,FLAG_ROTATE):
+	def fjx(input_i):
+		if FLAG_ROTATE:return np.float64(math.pow(math.cos(input_i),2)*math.sin(input_i)*SPEEDF)
+		return np.float64(0)
+
+	def fjy(input_i):
+		if FLAG_ROTATE:return np.float64(math.pow(math.sin(input_i),2)*SPEEDF)
+		return np.float64(0)
+
+	matrix_generation_domain_x = np.linspace(-x_range+CX, x_range+CX, num=OUTPUT_SIZE_IN_PIXELS_X,dtype=np.float64)
+	matrix_generation_domain_y = np.linspace(-y_range+CY, y_range+CY, num=OUTPUT_SIZE_IN_PIXELS_Y,dtype=np.float64)
+	rotx_i=fjx(input_i)
+	roty_i=fjy(input_i)
+
+	gD_npx = np.array(matrix_generation_domain_x,dtype=np.float64)
+	gD_npy = np.array(matrix_generation_domain_y,dtype=np.float64)
+	input_ib=np.float64(input_i)
+	input_jiter=np.float32(jiter)
+	julia_shape=(OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,RGB)
+		
+	result = np.empty(julia_shape, dtype=np.uint32)	
+	ix=0
+	for x in matrix_generation_domain_x:
+		iy=0
+		for y in matrix_generation_domain_y:
+			iters=0
+			z=complex(0,0)
+			c=complex(y,x)
+			while iters < 100:
+				z=z**2+c
+				if abs(z)>2:break
+				iters+=1
+			
+			perciters=(iters/100)*255
+			result[ix,iy,0]=int(perciters)
+			result[ix,iy,1]=0			
+			result[ix,iy,2]=0
+			iy+=1
+		ix+=1
+	return result
 
 
 def save_file( dir,filename,result_matrix,fig,ims,ccycle,figuresize_x,figuresize_y):
@@ -225,7 +267,7 @@ def julia():
 	EXPZOOM=float(params["EXPZOOM"])
 
 
-	set_start_method("spawn")
+	# set_start_method("spawn")
 	try:shutil.rmtree(DIR)
 	except:pass
 	os.mkdir(DIR)
@@ -298,10 +340,15 @@ init xrange {xrange} desc zoom : {zoom} - new xrange {x_range}")
 			# input_i = counter
 			input_i=rotlnsp[counter]
 			result_matrix.append(opencl_ctx.run_julia(input_i,i/50,x_range,y_range,jiter))
+			# result_matrix.append(run_julia_py(input_i,x_range,y_range,jiter,OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,RGB,SPEEDF,CX,CY,FLAG_ROTATE))
+
 			cor+=1
 			counter+=1
 
-
+		# with Pool() as pj:
+		# 	result = pj.map(run_julia_py(input_i,x_range,y_range,jiter,OUTPUT_SIZE_IN_PIXELS_X,OUTPUT_SIZE_IN_PIXELS_Y,RGB,SPEEDF,CX,CY,FLAG_ROTATE),[])
+		# 	result=np.array(result)
+		# 	result_matrix.append(result)
 		ims = []
 		fig=plt.figure(figsize=(figuresize_x, figuresize_y))
 		fig.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=None, hspace=None)
